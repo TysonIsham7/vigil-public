@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<body>
+<div id="out"></div>
+<script>
+document.getElementById("out").innerHTML = location.search;
+eval("1");
+setTimeout("alert(1)", 1);
+window.location = req.query.next;
+</script>
+<button onclick="go()">Go</button>
+<a href="javascript:alert(1)">x</a>
+<img src="http://cdn.example/a.png">
+<script>
+document.cookie = "session=abc";
+localStorage.setItem("api_key", "abc");
+</script>
+<!-- eval("hidden") -->
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vigil</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; width: 22rem; font: 14px/1.4 "Segoe UI", sans-serif; background: #0e1520; color: #e7eef6; }
+    main { padding: 0.9rem 1rem 1rem; }
+    h1 { font-size: 1.05rem; margin: 0 0 0.2rem; }
+    label { display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin: 0.7rem 0; }
+    input[type="text"] { width: 100%; box-sizing: border-box; background: #172232; color: inherit; border: 1px solid #31445c; border-radius: 6px; padding: 0.4rem 0.5rem; }
+    ul { padding-left: 1rem; margin: 0.4rem 0; }
+    li { margin: 0.25rem 0; }
+    .muted { color: #93a4b5; font-size: 0.8rem; }
+    .id { color: #8fb4d4; font-family: ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Vigil</h1>
+    <p class="muted" id="host">This tab</p>
+    <label>High Security Mode <input id="mode" type="checkbox"></label>
+    <p class="muted">Normal mode only changes the badge. High Security holds unknown sites until the check finishes.</p>
+    <ul id="findings"></ul>
+    <label for="helper">Loopback helper</label>
+    <input id="helper" type="text" placeholder="http://127.0.0.1:8787" autocomplete="off" spellcheck="false">
+    <label for="token">Helper token</label>
+    <input id="token" type="password" placeholder="printed once by vigil serve" autocomplete="off" spellcheck="false">
+    <p class="muted">Optional fallback when the native host is not running. Paste the token vigil serve prints. Nothing is sent to any other host.</p>
+    <p class="muted">Vigil is a first-pass filter, not an audit.</p>
+  </main>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

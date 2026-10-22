@@ -1,0 +1,7 @@
+{
+  "name": "@vigil/safari",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "macOS Safari web extension container. iOS is an upcoming release and is not in this tree. Not an App Store or TestFlight release."
+}

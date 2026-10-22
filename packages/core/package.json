@@ -1,0 +1,10 @@
+{
+  "name": "@vigil/core",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Pure TypeScript scan rules and report schema. No Node or DOM dependencies.",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

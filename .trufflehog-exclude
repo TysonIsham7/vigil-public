@@ -1,0 +1,12 @@
+(^|/)fixtures/
+(^|/)packages/[^/]+/test/
+(^|/)apps/[^/]+/test/
+(^|/)apps/safari/Vigil macOS Tests/
+(^|/)packages/netcheck/certs/
+(^|/)packages/intel/data/distrusted-cas\.json$
+(^|/)node_modules/
+(^|/)dist/
+(^|/)\.git(/|$)
+\.tar\.gz$
+(^|/)gitleaks$
+(^|/)trufflehog$

@@ -1,0 +1,27 @@
+node_modules/
+dist/
+apps/safari/Shared (Extension)/Resources/*
+!apps/safari/Shared (Extension)/Resources/.gitkeep
+apps/safari/Shared (Extension)/Generated/*
+!apps/safari/Shared (Extension)/Generated/.gitkeep
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+*.xcconfig
+*.xcuserstate
+xcuserdata/
+DerivedData/
+dd-*/
+*.tar.gz
+*.tgz
+*.p12
+*.mobileprovision
+*.cer
+*.dSYM
+*.ipa
+gitleaks
+trufflehog
+.gitleaks-report.json

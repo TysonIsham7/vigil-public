@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Vigil",
+  "version": "2.0.0",
+  "description": "Local-first site check. High Security Mode holds unknown sites before they load. Not a store release.",
+  "minimum_chrome_version": "120",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA9VI2BmWDeoetp4VmIRFHkg7ymoYyx9Dut/N4CQ9xTmrjCjSwOH/vN7q5ODj7zVMH47AnNfVZYh9FlMJVMM4pgtL8GioO2iE5BeYsLaFw2Y9aJg/fSYcHkW0S+mcoIQWQNoQOAiat7exIfhUYX7IFyOxCZO3UDAXuKf+HsheWI8Na16ueIJi/qY7IQ7PcvR0+4GnQPMaSFYSpaxKAxMy1K/TxytROWQ/PmsVLYElTAKFLz5vb+9aOI3HC78aCe7Ljl+F5BNuzfELBdBUpG1GJEBit0FTta0QKQ8kFuwUEAkzpGgqT/vzu3M6UlzPZFUbawIQUVf0SY1twpr6fVgMcIQIDAQAB",
+  "permissions": ["storage", "webNavigation", "tabs", "declarativeNetRequest", "nativeMessaging", "scripting"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["blank-relay.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Vigil",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'none'"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "WP-FINGERPRINT",
+  "published": "2026-10-21",
+  "component": "wordpress",
+  "summary": "Passive WordPress fingerprint from a generator meta tag, wp-content paths, or a public readme version. Vigil does not probe past one extra GET of a public path.",
+  "sources": [
+    "https://developer.wordpress.org/rest-api/",
+    "https://wordpress.org/documentation/article/htaccess/"
+  ]
+}

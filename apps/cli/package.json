@@ -1,0 +1,19 @@
+{
+  "name": "@vigil/cli",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "vigil scan, check-url, deps, and doctor. Private. Not published.",
+  "bin": {
+    "vigil": "./dist/vigil.js"
+  },
+  "exports": {
+    ".": "./src/main.ts"
+  },
+  "dependencies": {
+    "@vigil/core": "workspace:*",
+    "@vigil/intel": "workspace:*",
+    "@vigil/netcheck": "workspace:*",
+    "fflate": "^0.8.2"
+  }
+}

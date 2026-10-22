@@ -1,0 +1,12 @@
+{
+  "name": "@vigil/intel",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Bundled Vigil threat data and pure checks. No network and no code execution.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./lookalike": "./src/lookalike.ts",
+    "./version": "./src/version.ts"
+  }
+}

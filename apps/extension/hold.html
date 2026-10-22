@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vigil hold</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; font: 16px/1.45 "Segoe UI", sans-serif; background: #0e1520; color: #e7eef6; }
+    main { max-width: 38rem; margin: 8vh auto; padding: 0 1.25rem 3rem; }
+    h1 { font-size: 1.6rem; margin-bottom: 0.4rem; }
+    p { color: #c5d2e0; }
+    ul { padding-left: 1.1rem; }
+    li { margin: 0.35rem 0; }
+    .id { color: #8fb4d4; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+    button { font: inherit; border: 0; border-radius: 6px; padding: 0.55rem 0.9rem; margin-right: 0.5rem; cursor: pointer; }
+    button.primary { background: #d7e6f5; color: #102033; }
+    button.quiet { background: #243246; color: #e7eef6; }
+    footer, .muted { margin-top: 0.6rem; font-size: 0.85rem; color: #93a4b5; }
+    #target { font-family: ui-monospace, monospace; word-break: break-all; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1 id="title">Checking this site</h1>
+    <p id="target"></p>
+    <p class="muted">The address bar shows this extension page. A site cannot copy that bar. The address below is the one Vigil held.</p>
+    <p id="status">High Security Mode is running a local check before the page loads.</p>
+    <ul id="reasons"></ul>
+    <div id="actions" class="hidden">
+      <button class="primary" id="once" type="button">Proceed this time</button>
+      <button class="quiet" id="always" type="button">Always allow this site</button>
+    </div>
+    <footer>Vigil is a first-pass filter, not an audit. Sites that handle money, health, or credentials still need a professional review.</footer>
+  </main>
+  <script type="module" src="hold.js"></script>
+</body>
+</html>

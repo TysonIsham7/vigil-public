@@ -1,0 +1,11 @@
+{
+  "name": "@vigil/extension",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Chrome MV3 extension. Private. Not published to the Chrome Web Store.",
+  "dependencies": {
+    "@vigil/core": "workspace:*",
+    "@vigil/intel": "workspace:*"
+  }
+}

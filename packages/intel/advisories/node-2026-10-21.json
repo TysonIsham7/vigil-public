@@ -1,0 +1,18 @@
+{
+  "id": "NODE-2026-10-21",
+  "published": "2026-10-21",
+  "component": "node",
+  "summary": "Node.js 22.23.4, 24.22.1, and 26.12.1 fix the 21 October 2026 security release. The high issue on every line includes a Brotli decoder bug in the fetch path.",
+  "fixedLines": [
+    { "major": 22, "minor": 23, "patch": 4 },
+    { "major": 24, "minor": 22, "patch": 1 },
+    { "major": 26, "minor": 12, "patch": 1 }
+  ],
+  "remediation": "Run Vigil on Node 22.23.4 or newer on the 22 line, 24.22.1 or newer on the 24 line, or 26.12.1 or newer on the 26 line.",
+  "sources": [
+    "https://nodejs.org/en/blog/vulnerability/october-2026-security-releases",
+    "https://nodejs.org/en/blog/release/v22.23.4",
+    "https://nodejs.org/en/blog/release/v24.22.1",
+    "https://nodejs.org/en/blog/release/v26.12.1"
+  ]
+}

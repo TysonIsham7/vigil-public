@@ -1,0 +1,21 @@
+title = "Vigil"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Synthetic fixtures and unit tests. Production paths are still scanned."
+paths = [
+  '''(^|/)fixtures/''',
+  '''(^|/)packages/[^/]+/test/''',
+  '''(^|/)apps/[^/]+/test/''',
+  '''(^|/)packages/netcheck/certs/''',
+  '''(^|/)packages/intel/data/distrusted-cas\.json$''',
+]
+
+[[allowlists]]
+description = "Chrome MV3 extension public key (SubjectPublicKeyInfo). The private key is not stored."
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)apps/extension/manifest\.json$''']
+regexes = ['''^MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A''']

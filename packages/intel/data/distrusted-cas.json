@@ -1,0 +1,406 @@
+{
+  "version": "2026.10.21",
+  "generatedFrom": "public incident records dated 2026-10-20; fingerprints recomputed from the published certificates",
+  "policy": "A chain containing any block-listed SPKI or certificate fingerprint is a critical deploy block. SPKI matching covers Sectigo cross-signs of the same key. AAA Certificate Services and emSign Root TLS CA - G3 are recorded because they signed affected certificates, and are not blanket-distrusted: other subscribers chain through them. emSign ECC Root CA - G3 is block-listed because Chrome removes it from the root store on 2026-10-27. Re-check that removal after 2026-10-27 before changing this file.",
+  "followUps": [
+    {
+      "after": "2026-10-27",
+      "item": "Re-check the emSign ECC Root CA - G3 Chrome root-store removal after Oct 27, 2026. Chrome said the removal ships for Chrome Root Store clients on 2026-10-27 PDT. Keep the block until that re-check shows the outcome changed."
+    }
+  ],
+  "testHost": "https://dv-g3b-emudhra.we-have-a-problem.com/",
+  "sources": [
+    {
+      "title": "Mozilla oss-security: eMudhra Intermediates Compromise",
+      "url": "https://www.openwall.com/lists/oss-security/2026/10/20/1",
+      "date": "2026-10-20"
+    },
+    {
+      "title": "Mozilla dev-security-policy thread",
+      "url": "https://groups.google.com/a/mozilla.org/g/dev-security-policy/c/0R3XLJL6FuE",
+      "date": "2026-10-20"
+    },
+    {
+      "title": "Chrome Root Program: compromised eMudhra intermediates",
+      "url": "https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/",
+      "date": "2026-10-20"
+    },
+    {
+      "title": "Community incident record and certificate list",
+      "url": "https://emudhra.we-have-a-problem.com/",
+      "date": "2026-10-20"
+    },
+    {
+      "title": "impacted-intermediates.json",
+      "url": "https://emudhra.we-have-a-problem.com/impacted-intermediates.json",
+      "date": "2026-10-20"
+    },
+    {
+      "title": "Chromium net/data/ssl/blocklist",
+      "url": "https://chromium.googlesource.com/chromium/src/+/refs/heads/main/net/data/ssl/blocklist",
+      "date": "2026-10-21"
+    },
+    {
+      "title": "Go crypto/x509 distrusted SPKI hashes (Go 1.27.3 / 1.26.10)",
+      "url": "https://github.com/golang/go/blob/master/src/crypto/x509/verify.go",
+      "date": "2026-10-20"
+    },
+    {
+      "title": "Go release notice CVE-2026-111943",
+      "url": "https://www.openwall.com/lists/oss-security/2026/10/20/29",
+      "date": "2026-10-20"
+    },
+    {
+      "title": "emSign ECC Root CA - G3 fingerprint",
+      "url": "https://ssl-tools.net/subjects/704b80e92c15138ab8bef8cad0f2ed793ab3697c",
+      "date": "2026-10-21"
+    }
+  ],
+  "intermediates": [
+    {
+      "name": "EM DV TLS CA - G3B",
+      "usage": "tls",
+      "operator": "eMudhra BV",
+      "ccadb": "A012302",
+      "serial": "a4aee678f23362b4c0e460b772f214",
+      "issuer": "emSign Root TLS CA - G3",
+      "sha256": "42c4accd12c4f59597925e1a08a7a90102608543809308d50ec427e118ba1493",
+      "spkiSha256": "ebed6475c2c2d80fcb199f3fe8dd6e6b3ce60b77eb15d4e42c3dec0c6f5b5105",
+      "subjectKeyIdentifier": "e21e2fe71c19390e554b62c120245735248a2514",
+      "notBefore": "2025-04-30T15:54:08Z",
+      "notAfter": "2040-04-28T18:30:00Z",
+      "revocation": {
+        "status": "revoked",
+        "date": "2026-10-18T09:24:32Z",
+        "reason": "ca_compromise",
+        "crl_url": "http://crl.emsign.com/?roottlscag3.crl"
+      },
+      "action": "block",
+      "pem": "-----BEGIN CERTIFICATE-----\nMIIDaDCCAu6gAwIBAgIQAKSu5njyM2K0wORgt3LyFDAKBggqhkjOPQQDAzBWMQsw\nCQYDVQQGEwJJTjElMCMGA1UECgwcZU11ZGhyYSBUZWNobm9sb2dpZXMgTGltaXRl\nZDEgMB4GA1UEAwwXZW1TaWduIFJvb3QgVExTIENBIC0gRzMwHhcNMjUwNDMwMTU1\nNDA4WhcNNDAwNDI4MTgzMDAwWjA/MQswCQYDVQQGEwJOTDETMBEGA1UECgwKZU11\nZGhyYSBCVjEbMBkGA1UEAwwSRU0gRFYgVExTIENBIC0gRzNCMHYwEAYHKoZIzj0C\nAQYFK4EEACIDYgAE557ZwEqXc8RzXlERHahawr1eZKs3S4DhLLwgOOweTw47gS/J\nhZ4eZ6+wTi+LyX90hbplqpEe6KTkW2LVzAPVa+Z4s8OMtNyTfKJGDiOEU8iSk10p\n1E+R4VYGtjzO2rRoo4IBljCCAZIwHwYDVR0jBBgwFoAU4TqrIXzx401UrtRyt/2L\nWUIgkFQwHQYDVR0OBBYEFOIeL+ccGTkOVUtiwSAkVzUkiiUUMB0GA1UdJQQWMBQG\nCCsGAQUFBwMBBggrBgEFBQcDAjBdBgNVHSAEVjBUMDkGCysGAQQBg44hAQABMCow\nKAYIKwYBBQUHAgEWHGh0dHA6Ly9yZXBvc2l0b3J5LmVtc2lnbi5jb20wDQYLKwYB\nBAGDjiEBAmQwCAYGZ4EMAQIBMHUGCCsGAQUFBwEBBGkwZzAkBggrBgEFBQcwAYYY\naHR0cDovL29jc3AtYi5lbXNpZ24uY29tMD8GCCsGAQUFBzAChjNodHRwOi8vcmVw\nb3NpdG9yeS5lbXNpZ24uY29tL2NlcnRzL0VNRFZUTFNDQUczQi5wN2MwNwYDVR0f\nBDAwLjAsoCqgKIYmaHR0cDovL2NybC5lbXNpZ24uY29tLz9yb290dGxzY2FnMy5j\ncmwwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQAwCgYIKoZIzj0E\nAwMDaAAwZQIwLmsGXi6oFMJ2klkcEMXMug6gvxQWZWkewiDWVzQyl2L6z6DuQfPO\nIbh1grvdULDCAjEAxZvLlxUavG69J6wnSjC8XBbqNIQsJ6CE2QdNOe84Ptxb6VG8\ngt2TlfJbHii+KNvK\n-----END CERTIFICATE-----",
+      "crossSigns": [
+        {
+          "issuer": "AAA Certificate Services",
+          "issuerOperator": "Sectigo",
+          "ccadb": "A012347",
+          "serial": "a024fdf4ba665c785ce4a020483858b7",
+          "sha256": "45a883f349aedfd5f3a649b5498ffb121712ba8b448f3f2a91dbc5a766fcddbe",
+          "spkiSha256": "ebed6475c2c2d80fcb199f3fe8dd6e6b3ce60b77eb15d4e42c3dec0c6f5b5105",
+          "revocation": {
+            "status": "revoked",
+            "date": "2026-10-19T10:35:36Z",
+            "reason": "ca_compromise",
+            "crl_url": "http://crl.comodoca.com/AAACertificateServices.crl"
+          }
+        }
+      ]
+    },
+    {
+      "name": "EM OV TLS CA - G3B",
+      "usage": "tls",
+      "operator": "eMudhra BV",
+      "ccadb": "A012308",
+      "serial": "6cada367fb1c100088120ea202d568",
+      "issuer": "emSign Root TLS CA - G3",
+      "sha256": "98b896625c0c230adeec3eb2cf6aad5001ecf9156a68644e82374ce5833bc25b",
+      "spkiSha256": "43bffa19d6ef651451f6841e019931e96f6f2eaeff28ab4b6f1ce4576de2717b",
+      "subjectKeyIdentifier": "9bd86551afe7e72c37ad08ee6919d9bf3784ae0a",
+      "notBefore": "2025-04-30T16:00:12Z",
+      "notAfter": "2040-04-28T18:30:00Z",
+      "revocation": {
+        "status": "revoked",
+        "date": "2026-10-18T09:37:19Z",
+        "reason": "ca_compromise",
+        "crl_url": "http://crl.emsign.com/?roottlscag3.crl"
+      },
+      "action": "block",
+      "pem": "-----BEGIN CERTIFICATE-----\nMIIDZjCCAu2gAwIBAgIPbK2jZ/scEACIEg6iAtVoMAoGCCqGSM49BAMDMFYxCzAJ\nBgNVBAYTAklOMSUwIwYDVQQKDBxlTXVkaHJhIFRlY2hub2xvZ2llcyBMaW1pdGVk\nMSAwHgYDVQQDDBdlbVNpZ24gUm9vdCBUTFMgQ0EgLSBHMzAeFw0yNTA0MzAxNjAw\nMTJaFw00MDA0MjgxODMwMDBaMD8xCzAJBgNVBAYTAk5MMRMwEQYDVQQKDAplTXVk\naHJhIEJWMRswGQYDVQQDDBJFTSBPViBUTFMgQ0EgLSBHM0IwdjAQBgcqhkjOPQIB\nBgUrgQQAIgNiAARziXqg6zz9yosSQC/68KvE4SErr43ud4rJ7i1tuD+sKAxeBWOK\n56Ks1xwyKo42HN659pxDArndjXPRzGyqsswK7k4hbOl53VGKSvS2JuVoTN1lgDft\nDIVOTMEvTPhkbQ2jggGWMIIBkjAfBgNVHSMEGDAWgBThOqshfPHjTVSu1HK3/YtZ\nQiCQVDAdBgNVHQ4EFgQUm9hlUa/n5yw3rQjuaRnZvzeErgowHQYDVR0lBBYwFAYI\nKwYBBQUHAwEGCCsGAQUFBwMCMF0GA1UdIARWMFQwOQYLKwYBBAGDjiEBAAEwKjAo\nBggrBgEFBQcCARYcaHR0cDovL3JlcG9zaXRvcnkuZW1zaWduLmNvbTANBgsrBgEE\nAYOOIQECbjAIBgZngQwBAgIwdQYIKwYBBQUHAQEEaTBnMCQGCCsGAQUFBzABhhho\ndHRwOi8vb2NzcC1iLmVtc2lnbi5jb20wPwYIKwYBBQUHMAKGM2h0dHA6Ly9yZXBv\nc2l0b3J5LmVtc2lnbi5jb20vY2VydHMvRU1PVlRMU0NBRzNCLnA3YzA3BgNVHR8E\nMDAuMCygKqAohiZodHRwOi8vY3JsLmVtc2lnbi5jb20vP3Jvb3R0bHNjYWczLmNy\nbDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgwBgEB/wIBADAKBggqhkjOPQQD\nAwNnADBkAjBAk+5BizdJhrED3wb7F2Gm7bWI60dlNd075nghT2TrR4NWKZtJZcbc\n28xxIY/NONICMF6mPdsjosaqmvEMWqKcBh4vsIvXSKnQj5o8zrFB4oKS+accjYTe\n8Dz3bQjauvy9uw==\n-----END CERTIFICATE-----",
+      "crossSigns": [
+        {
+          "issuer": "AAA Certificate Services",
+          "issuerOperator": "Sectigo",
+          "ccadb": "A012354",
+          "serial": "e94223bde92f914e5ab9acabfdac3710",
+          "sha256": "5f1ded4dd590af74631290cf073b122a2aac6a1fa479778a0bd43579bd832699",
+          "spkiSha256": "43bffa19d6ef651451f6841e019931e96f6f2eaeff28ab4b6f1ce4576de2717b",
+          "revocation": {
+            "status": "revoked",
+            "date": "2026-10-19T10:35:36Z",
+            "reason": "ca_compromise",
+            "crl_url": "http://crl.comodoca.com/AAACertificateServices.crl"
+          }
+        }
+      ]
+    },
+    {
+      "name": "EM EV TLS CA - G3B",
+      "usage": "tls",
+      "operator": "eMudhra BV",
+      "ccadb": "A012304",
+      "serial": "c7c41efe92d825f05eae841a4a82c1",
+      "issuer": "emSign Root TLS CA - G3",
+      "sha256": "e7568fe6e12331f4fd7de61da4c7559d0f8eb192a218d4741a3ba75184333838",
+      "spkiSha256": "e0254c7fcdc265e2f0f8a428dabb75ab4ae039b4872d62f5ee57f0877d5a8a41",
+      "subjectKeyIdentifier": "3edc20d9894698877b873fd88147b25c15d84706",
+      "notBefore": "2025-04-30T16:03:31Z",
+      "notAfter": "2040-04-28T18:30:00Z",
+      "revocation": {
+        "status": "revoked",
+        "date": "2026-10-18T09:28:53Z",
+        "reason": "ca_compromise",
+        "crl_url": "http://crl.emsign.com/?roottlscag3.crl"
+      },
+      "action": "block",
+      "pem": "-----BEGIN CERTIFICATE-----\nMIIDaDCCAu2gAwIBAgIQAMfEHv6S2CXwXq6EGkqCwTAKBggqhkjOPQQDAzBWMQsw\nCQYDVQQGEwJJTjElMCMGA1UECgwcZU11ZGhyYSBUZWNobm9sb2dpZXMgTGltaXRl\nZDEgMB4GA1UEAwwXZW1TaWduIFJvb3QgVExTIENBIC0gRzMwHhcNMjUwNDMwMTYw\nMzMxWhcNNDAwNDI4MTgzMDAwWjA/MQswCQYDVQQGEwJOTDETMBEGA1UECgwKZU11\nZGhyYSBCVjEbMBkGA1UEAwwSRU0gRVYgVExTIENBIC0gRzNCMHYwEAYHKoZIzj0C\nAQYFK4EEACIDYgAEJduoWmTTl9oLEFLp6lRuSHvv6pydnWigxerc/u91ppu11vwB\n9Cv7ym60C81kwHZ+Nv/QXZeoE8WqDGyVMOec9fCGZGjxOAZCCqXIUYQLHiUlQOeQ\n5LZUw4Uu1krx6GV9o4IBlTCCAZEwHwYDVR0jBBgwFoAU4TqrIXzx401UrtRyt/2L\nWUIgkFQwHQYDVR0OBBYEFD7cINmJRpiHe4c/2IFHslwV2EcGMB0GA1UdJQQWMBQG\nCCsGAQUFBwMBBggrBgEFBQcDAjBcBgNVHSAEVTBTMDkGCysGAQQBg44hAQABMCow\nKAYIKwYBBQUHAgEWHGh0dHA6Ly9yZXBvc2l0b3J5LmVtc2lnbi5jb20wDQYLKwYB\nBAGDjiEBAngwBwYFZ4EMAQEwdQYIKwYBBQUHAQEEaTBnMCQGCCsGAQUFBzABhhho\ndHRwOi8vb2NzcC1iLmVtc2lnbi5jb20wPwYIKwYBBQUHMAKGM2h0dHA6Ly9yZXBv\nc2l0b3J5LmVtc2lnbi5jb20vY2VydHMvRU1FVlRMU0NBRzNCLnA3YzA3BgNVHR8E\nMDAuMCygKqAohiZodHRwOi8vY3JsLmVtc2lnbi5jb20vP3Jvb3R0bHNjYWczLmNy\nbDAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgwBgEB/wIBADAKBggqhkjOPQQD\nAwNpADBmAjEA9Jq999oaOUKhFwopw33iCmt0OHIn3gjT43GfuOHR/YckXdwoNdDA\nlIEhz0NgRO3/AjEAvY/a3OMvktIZLYjn+WLKmp0QhrIMV+e6EpS7j4GVeOKouNp6\nMN/P+ByGeiRMghzB\n-----END CERTIFICATE-----",
+      "crossSigns": [
+        {
+          "issuer": "AAA Certificate Services",
+          "issuerOperator": "Sectigo",
+          "ccadb": "A012333",
+          "serial": "d8f8685e4f2bd9d82402a85a1c1eb731",
+          "sha256": "579480aea166290bd3c643589e795fc0d0e54e86505d180f1dff99efd3199512",
+          "spkiSha256": "e0254c7fcdc265e2f0f8a428dabb75ab4ae039b4872d62f5ee57f0877d5a8a41",
+          "revocation": {
+            "status": "revoked",
+            "date": "2026-10-19T10:35:36Z",
+            "reason": "ca_compromise",
+            "crl_url": "http://crl.comodoca.com/AAACertificateServices.crl"
+          }
+        }
+      ]
+    },
+    {
+      "name": "EM DV TLS CA - G3C",
+      "usage": "tls",
+      "operator": "eMudhra Inc",
+      "ccadb": "A012294",
+      "serial": "588b2e3c2bb8cda13e1a1209254321",
+      "issuer": "emSign Root TLS CA - G3",
+      "sha256": "0164d7ceae5bb909c272af151ff44b1177ae9b47d9424b94f1d9558c30934d19",
+      "spkiSha256": "49dd353dc2b919a3770645117d0e60c16115e7d1bc259eefe734b00ea434fe5f",
+      "subjectKeyIdentifier": "ae7e105c3c2996c1a847270559f1e03dd4e50af3",
+      "notBefore": "2025-04-30T15:35:09Z",
+      "notAfter": "2040-04-28T18:30:00Z",
+      "revocation": {
+        "status": "revoked",
+        "date": "2026-10-18T09:27:07Z",
+        "reason": "ca_compromise",
+        "crl_url": "http://crl.emsign.com/?roottlscag3.crl"
+      },
+      "action": "block",
+      "pem": "-----BEGIN CERTIFICATE-----\nMIIDaDCCAu6gAwIBAgIPWIsuPCu4zaE+GhIJJUMhMAoGCCqGSM49BAMDMFYxCzAJ\nBgNVBAYTAklOMSUwIwYDVQQKDBxlTXVkaHJhIFRlY2hub2xvZ2llcyBMaW1pdGVk\nMSAwHgYDVQQDDBdlbVNpZ24gUm9vdCBUTFMgQ0EgLSBHMzAeFw0yNTA0MzAxNTM1\nMDlaFw00MDA0MjgxODMwMDBaMEAxCzAJBgNVBAYTAlVTMRQwEgYDVQQKDAtlTXVk\naHJhIEluYzEbMBkGA1UEAwwSRU0gRFYgVExTIENBIC0gRzNDMHYwEAYHKoZIzj0C\nAQYFK4EEACIDYgAEOnp4YsjETTJN3WkDOmeCwO/u/kBV5ooSP6A3G6O9kZRRTuFy\npDPjYw8CvRiAN9nlFJ+bd9uUooHfmHsv6oiLdL3+j9pMEJnubKGVZv4+8OX2sJpV\nbMyLpQVh3xsqRB0Bo4IBljCCAZIwHwYDVR0jBBgwFoAU4TqrIXzx401UrtRyt/2L\nWUIgkFQwHQYDVR0OBBYEFK5+EFw8KZbBqEcnBVnx4D3U5QrzMB0GA1UdJQQWMBQG\nCCsGAQUFBwMBBggrBgEFBQcDAjBdBgNVHSAEVjBUMDkGCysGAQQBg44hAQABMCow\nKAYIKwYBBQUHAgEWHGh0dHA6Ly9yZXBvc2l0b3J5LmVtc2lnbi5jb20wDQYLKwYB\nBAGDjiEBAmQwCAYGZ4EMAQIBMHUGCCsGAQUFBwEBBGkwZzAkBggrBgEFBQcwAYYY\naHR0cDovL29jc3AtYy5lbXNpZ24uY29tMD8GCCsGAQUFBzAChjNodHRwOi8vcmVw\nb3NpdG9yeS5lbXNpZ24uY29tL2NlcnRzL0VNRFZUTFNDQUczQy5wN2MwNwYDVR0f\nBDAwLjAsoCqgKIYmaHR0cDovL2NybC5lbXNpZ24uY29tLz9yb290dGxzY2FnMy5j\ncmwwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQAwCgYIKoZIzj0E\nAwMDaAAwZQIxAMEN2HWMocbuWdy1d33pH6JpMvP/V/DIS5PtZbv1Q7TXEbxrcyxg\nyuddOJscYDJJlAIwB4sH1BpbScDzkdD4tJBSwrG/1Mx82vb8YaySehNuu1+1oXNd\nAEKwaJ0mVzScy2+6\n-----END CERTIFICATE-----",
+      "crossSigns": [
+        {
+          "issuer": "AAA Certificate Services",
+          "issuerOperator": "Sectigo",
+          "ccadb": "A012342",
+          "serial": "91f347f1a5b7d39962b95e0ee4e299d1",
+          "sha256": "62b7f9868263f72f6911fc78ceaf72c1979158b7368bf648683bb2aa39b02e72",
+          "spkiSha256": "49dd353dc2b919a3770645117d0e60c16115e7d1bc259eefe734b00ea434fe5f",
+          "revocation": {
+            "status": "revoked",
+            "date": "2026-10-19T10:35:36Z",
+            "reason": "ca_compromise",
+            "crl_url": "http://crl.comodoca.com/AAACertificateServices.crl"
+          }
+        }
+      ]
+    },
+    {
+      "name": "EM OV TLS CA - G3C",
+      "usage": "tls",
+      "operator": "eMudhra Inc",
+      "ccadb": "A012300",
+      "serial": "296926c227a3a1526392b19482a504",
+      "issuer": "emSign Root TLS CA - G3",
+      "sha256": "cb6e15165ac802e9b3f993f16c25d41f4e81c21ebde71ae1b012ac00bf9c7c3f",
+      "spkiSha256": "63ecefee431d49523bc1136c4e72d0206a477086caf606cd5cf025686c109cf8",
+      "subjectKeyIdentifier": "34eaea0cebc90adaf9d0c5e2ed9b78c9879e1b6c",
+      "notBefore": "2025-04-30T15:37:41Z",
+      "notAfter": "2040-04-28T18:30:00Z",
+      "revocation": {
+        "status": "revoked",
+        "date": "2026-10-18T09:38:46Z",
+        "reason": "ca_compromise",
+        "crl_url": "http://crl.emsign.com/?roottlscag3.crl"
+      },
+      "action": "block",
+      "pem": "-----BEGIN CERTIFICATE-----\nMIIDaDCCAu6gAwIBAgIPKWkmwiejoVJjkrGUgqUEMAoGCCqGSM49BAMDMFYxCzAJ\nBgNVBAYTAklOMSUwIwYDVQQKDBxlTXVkaHJhIFRlY2hub2xvZ2llcyBMaW1pdGVk\nMSAwHgYDVQQDDBdlbVNpZ24gUm9vdCBUTFMgQ0EgLSBHMzAeFw0yNTA0MzAxNTM3\nNDFaFw00MDA0MjgxODMwMDBaMEAxCzAJBgNVBAYTAlVTMRQwEgYDVQQKDAtlTXVk\naHJhIEluYzEbMBkGA1UEAwwSRU0gT1YgVExTIENBIC0gRzNDMHYwEAYHKoZIzj0C\nAQYFK4EEACIDYgAEE4JRzVKskpjByKrZdzId65fnCb0LTKCspV3IrVHc/J0ViaFZ\nfjpRIOHv1jHGPhg1ysrimGmmLhYx6KKBgatWYW3EXZGKvAnzqw5jz3kqpNztc4e+\nN7ulaVSfHAKycO1no4IBljCCAZIwHwYDVR0jBBgwFoAU4TqrIXzx401UrtRyt/2L\nWUIgkFQwHQYDVR0OBBYEFDTq6gzryQra+dDF4u2beMmHnhtsMB0GA1UdJQQWMBQG\nCCsGAQUFBwMBBggrBgEFBQcDAjBdBgNVHSAEVjBUMDkGCysGAQQBg44hAQABMCow\nKAYIKwYBBQUHAgEWHGh0dHA6Ly9yZXBvc2l0b3J5LmVtc2lnbi5jb20wDQYLKwYB\nBAGDjiEBAm4wCAYGZ4EMAQICMHUGCCsGAQUFBwEBBGkwZzAkBggrBgEFBQcwAYYY\naHR0cDovL29jc3AtYy5lbXNpZ24uY29tMD8GCCsGAQUFBzAChjNodHRwOi8vcmVw\nb3NpdG9yeS5lbXNpZ24uY29tL2NlcnRzL0VNT1ZUTFNDQUczQy5wN2MwNwYDVR0f\nBDAwLjAsoCqgKIYmaHR0cDovL2NybC5lbXNpZ24uY29tLz9yb290dGxzY2FnMy5j\ncmwwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQAwCgYIKoZIzj0E\nAwMDaAAwZQIxAMSZt2xsPeumRdeSMSQ3CbzIZeQ/q7GDCWfeE1Pq+mhgA6gRM44c\nNVF3xJ+wsxJk+wIwFJbaDMokD8Ei6eNOiA8yUMYvfzQyngmrhZQMdPCK1SewrR79\n4rSb9vGqxZzelQth\n-----END CERTIFICATE-----",
+      "crossSigns": [
+        {
+          "issuer": "AAA Certificate Services",
+          "issuerOperator": "Sectigo",
+          "ccadb": "A012343",
+          "serial": "8d5a4811939ef447d77111cdd9849ae9",
+          "sha256": "7485b51c0ed192878fa1d2f948fb529ae1842cc5086c4b67f7be5b2039de9489",
+          "spkiSha256": "63ecefee431d49523bc1136c4e72d0206a477086caf606cd5cf025686c109cf8",
+          "revocation": {
+            "status": "revoked",
+            "date": "2026-10-19T10:35:36Z",
+            "reason": "ca_compromise",
+            "crl_url": "http://crl.comodoca.com/AAACertificateServices.crl"
+          }
+        }
+      ]
+    },
+    {
+      "name": "EM EV TLS CA - G3C",
+      "usage": "tls",
+      "operator": "eMudhra Inc",
+      "ccadb": "A012296",
+      "serial": "8009928a64107601af05fa2f19f109",
+      "issuer": "emSign Root TLS CA - G3",
+      "sha256": "432ec25f0d28de9006d97bf752f17bbb2cd41f669933fcb072d9a1148d0261f3",
+      "spkiSha256": "5c0660a2b164910d8ff589c18e14552e9e0ec237dcefe2cb736d41a4811f81a0",
+      "subjectKeyIdentifier": "a6255e80a94db7f3967c1bc791df92bcee4beb5f",
+      "notBefore": "2025-04-30T15:39:31Z",
+      "notAfter": "2040-04-28T18:30:00Z",
+      "revocation": {
+        "status": "revoked",
+        "date": "2026-10-18T09:30:49Z",
+        "reason": "ca_compromise",
+        "crl_url": "http://crl.emsign.com/?roottlscag3.crl"
+      },
+      "action": "block",
+      "pem": "-----BEGIN CERTIFICATE-----\nMIIDaDCCAu6gAwIBAgIQAIAJkopkEHYBrwX6LxnxCTAKBggqhkjOPQQDAzBWMQsw\nCQYDVQQGEwJJTjElMCMGA1UECgwcZU11ZGhyYSBUZWNobm9sb2dpZXMgTGltaXRl\nZDEgMB4GA1UEAwwXZW1TaWduIFJvb3QgVExTIENBIC0gRzMwHhcNMjUwNDMwMTUz\nOTMxWhcNNDAwNDI4MTgzMDAwWjBAMQswCQYDVQQGEwJVUzEUMBIGA1UECgwLZU11\nZGhyYSBJbmMxGzAZBgNVBAMMEkVNIEVWIFRMUyBDQSAtIEczQzB2MBAGByqGSM49\nAgEGBSuBBAAiA2IABC1W6Cmm+4LGSkaX2WCvlR6QZ66R+SbTQwbaSKiq63hptqZ+\nbSdCbgRCqgOzbhmI3/Y2UU7hzwf1uks/8qBmRa59MdWGatMao9JG6wsxd+6Zy3Vm\nxRbOdICKZo+R8MR/yqOCAZUwggGRMB8GA1UdIwQYMBaAFOE6qyF88eNNVK7Ucrf9\ni1lCIJBUMB0GA1UdDgQWBBSmJV6AqU2385Z8G8eR35K87kvrXzAdBgNVHSUEFjAU\nBggrBgEFBQcDAQYIKwYBBQUHAwIwXAYDVR0gBFUwUzA5BgsrBgEEAYOOIQEAATAq\nMCgGCCsGAQUFBwIBFhxodHRwOi8vcmVwb3NpdG9yeS5lbXNpZ24uY29tMA0GCysG\nAQQBg44hAQJ4MAcGBWeBDAEBMHUGCCsGAQUFBwEBBGkwZzAkBggrBgEFBQcwAYYY\naHR0cDovL29jc3AtYy5lbXNpZ24uY29tMD8GCCsGAQUFBzAChjNodHRwOi8vcmVw\nb3NpdG9yeS5lbXNpZ24uY29tL2NlcnRzL0VNRVZUTFNDQUczQy5wN2MwNwYDVR0f\nBDAwLjAsoCqgKIYmaHR0cDovL2NybC5lbXNpZ24uY29tLz9yb290dGxzY2FnMy5j\ncmwwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQAwCgYIKoZIzj0E\nAwMDaAAwZQIwBy1wTnzH4lXDTy2PD91ysLjvnlVN3JbJmc1BIMEU8TOLkYVHibMc\n9HeyonikFSfmAjEA6uE3QRxlrZTz/1/lXPTEMUhoauAtycagtlNFp79kjhvNa2/f\nAal1GNxsOutLnr0Y\n-----END CERTIFICATE-----",
+      "crossSigns": [
+        {
+          "issuer": "AAA Certificate Services",
+          "issuerOperator": "Sectigo",
+          "ccadb": "A012334",
+          "serial": "05f078752dece7a1bb8595d303167171",
+          "sha256": "fd9d5c2dbbd4995ab69b8d50c439d9527b00529199c2fd01b2174eb58f07021f",
+          "spkiSha256": "5c0660a2b164910d8ff589c18e14552e9e0ec237dcefe2cb736d41a4811f81a0",
+          "revocation": {
+            "status": "revoked",
+            "date": "2026-10-19T10:35:36Z",
+            "reason": "ca_compromise",
+            "crl_url": "http://crl.comodoca.com/AAACertificateServices.crl"
+          }
+        }
+      ]
+    },
+    {
+      "name": "EM OV CS CA - G3B",
+      "usage": "code-signing",
+      "operator": "eMudhra BV",
+      "ccadb": "A012306",
+      "serial": "7818933f8f85b4619a2b35fba83d0a",
+      "issuer": "emSign Root CS CA - G3",
+      "sha256": "9e39de2881273acc225a149c72ba3e0f51424963669ab633ee1dc7df5db067b4",
+      "spkiSha256": "ec4ffa1ad0ac88081314b7aaffef6a91f97cd57291bb5ba686c5415f5eb4f6b6",
+      "subjectKeyIdentifier": "79fae8eccfdb0d758da458d69fb6eddc7c49dee6",
+      "notBefore": "2025-04-30T16:08:27Z",
+      "notAfter": "2040-04-28T18:30:00Z",
+      "revocation": {
+        "status": "revoked",
+        "date": "2026-10-18T09:33:37Z",
+        "reason": "ca_compromise",
+        "crl_url": "http://crl.emsign.com/?rootcscag3.crl"
+      },
+      "action": "block",
+      "pem": "-----BEGIN CERTIFICATE-----\nMIIDWzCCAuCgAwIBAgIPeBiTP4+FtGGaKzX7qD0KMAoGCCqGSM49BAMDMFUxCzAJ\nBgNVBAYTAklOMSUwIwYDVQQKDBxlTXVkaHJhIFRlY2hub2xvZ2llcyBMaW1pdGVk\nMR8wHQYDVQQDDBZlbVNpZ24gUm9vdCBDUyBDQSAtIEczMB4XDTI1MDQzMDE2MDgy\nN1oXDTQwMDQyODE4MzAwMFowPjELMAkGA1UEBhMCTkwxEzARBgNVBAoMCmVNdWRo\ncmEgQlYxGjAYBgNVBAMMEUVNIE9WIENTIENBIC0gRzNCMHYwEAYHKoZIzj0CAQYF\nK4EEACIDYgAEqrsPsGZqz88B+tUr/P1MK/LLPDSX3nOVDlgZth/mlQmHQcjEkUOb\nNKBDHK/+W/m0wcjorgAB+fTcitgsWfNjnpbNbD1NsM7+wmw9YlF7N3YTcnQ/jord\nd7EAZPKr5eBQo4IBizCCAYcwHwYDVR0jBBgwFoAUaHQD+IXKjVRQVx0W4MjeRQ2r\nzS0wHQYDVR0OBBYEFHn66OzP2w11jaRY1p+27dx8Sd7mMBMGA1UdJQQMMAoGCCsG\nAQUFBwMDMF4GA1UdIARXMFUwOQYLKwYBBAGDjiEBAAEwKjAoBggrBgEFBQcCARYc\naHR0cDovL3JlcG9zaXRvcnkuZW1zaWduLmNvbTAOBgwrBgEEAYOOIQECgUgwCAYG\nZ4EMAQQBMHQGCCsGAQUFBwEBBGgwZjAkBggrBgEFBQcwAYYYaHR0cDovL29jc3At\nYi5lbXNpZ24uY29tMD4GCCsGAQUFBzAChjJodHRwOi8vcmVwb3NpdG9yeS5lbXNp\nZ24uY29tL2NlcnRzL0VNT1ZDU0NBRzNCLnA3YzA2BgNVHR8ELzAtMCugKaAnhiVo\ndHRwOi8vY3JsLmVtc2lnbi5jb20vP3Jvb3Rjc2NhZzMuY3JsMA4GA1UdDwEB/wQE\nAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEAMAoGCCqGSM49BAMDA2kAMGYCMQC/zr03\nYEELsNKqzUtH2dVFi4BaKFdyrr/6G1dIWp8KAVgsw2/u4lyyboUDaC9jDvICMQC9\nHTxku84tNX9dmHOtH7aC2Nu/JM0jTf6KjZAvovCJzzv1IFWSZpVLZibynMLXOrM=\n-----END CERTIFICATE-----",
+      "crossSigns": [
+        {
+          "issuer": "AAA Certificate Services",
+          "issuerOperator": "Sectigo",
+          "ccadb": "A012352",
+          "serial": "41e32b73ac185d6ce0d7480bacf84e69",
+          "sha256": "a496e23ac0cab8155fc9b117b97eae368efcbb9041aec8804d5a308d2d01c2d8",
+          "spkiSha256": "ec4ffa1ad0ac88081314b7aaffef6a91f97cd57291bb5ba686c5415f5eb4f6b6",
+          "revocation": {
+            "status": "revoked",
+            "date": "2026-10-19T10:35:36Z",
+            "reason": "ca_compromise",
+            "crl_url": "http://crl.comodoca.com/AAACertificateServices.crl"
+          }
+        }
+      ]
+    },
+    {
+      "name": "EM OV CS CA - G3C",
+      "usage": "code-signing",
+      "operator": "eMudhra Inc",
+      "ccadb": "A012298",
+      "serial": "544b7f922c31ae220a4a922916f6e6",
+      "issuer": "emSign Root CS CA - G3",
+      "sha256": "4b2460a466f95fd40113bcdcca2ceb29b3b093921de45474da7df48874c630b1",
+      "spkiSha256": "92c063d67e8f14db71d288e11266ffdaf69cbf115f7bab14f3bc2f68d25e0e30",
+      "subjectKeyIdentifier": "ee6f73298d6fbfa7b31bc39534f61556447866b7",
+      "notBefore": "2025-04-30T16:38:40Z",
+      "notAfter": "2040-04-28T18:30:00Z",
+      "revocation": {
+        "status": "revoked",
+        "date": "2026-10-18T09:35:24Z",
+        "reason": "ca_compromise",
+        "crl_url": "http://crl.emsign.com/?rootcscag3.crl"
+      },
+      "action": "block",
+      "pem": "-----BEGIN CERTIFICATE-----\nMIIDWzCCAuGgAwIBAgIPVEt/kiwxriIKSpIpFvbmMAoGCCqGSM49BAMDMFUxCzAJ\nBgNVBAYTAklOMSUwIwYDVQQKDBxlTXVkaHJhIFRlY2hub2xvZ2llcyBMaW1pdGVk\nMR8wHQYDVQQDDBZlbVNpZ24gUm9vdCBDUyBDQSAtIEczMB4XDTI1MDQzMDE2Mzg0\nMFoXDTQwMDQyODE4MzAwMFowPzELMAkGA1UEBhMCVVMxFDASBgNVBAoMC2VNdWRo\ncmEgSW5jMRowGAYDVQQDDBFFTSBPViBDUyBDQSAtIEczQzB2MBAGByqGSM49AgEG\nBSuBBAAiA2IABLnw4GNHAqacpqrdRDz9YsQbm6SyCSRpfXl052kaEm+5avs+NML9\nO8X0gwYfJl3CpYQ2NHMjUQQ2so8E84YjYwZ5gOJQPgJTLWVGI1pxZaJZoe9Jb3Qb\nX97neHII5Lj676OCAYswggGHMB8GA1UdIwQYMBaAFGh0A/iFyo1UUFcdFuDI3kUN\nq80tMB0GA1UdDgQWBBTub3MpjW+/p7Mbw5U09hVWRHhmtzATBgNVHSUEDDAKBggr\nBgEFBQcDAzBeBgNVHSAEVzBVMDkGCysGAQQBg44hAQABMCowKAYIKwYBBQUHAgEW\nHGh0dHA6Ly9yZXBvc2l0b3J5LmVtc2lnbi5jb20wDgYMKwYBBAGDjiEBAoFIMAgG\nBmeBDAEEATB0BggrBgEFBQcBAQRoMGYwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3Nw\nLWMuZW1zaWduLmNvbTA+BggrBgEFBQcwAoYyaHR0cDovL3JlcG9zaXRvcnkuZW1z\naWduLmNvbS9jZXJ0cy9FTU9WQ1NDQUczQy5wN2MwNgYDVR0fBC8wLTAroCmgJ4Yl\naHR0cDovL2NybC5lbXNpZ24uY29tLz9yb290Y3NjYWczLmNybDAOBgNVHQ8BAf8E\nBAMCAQYwEgYDVR0TAQH/BAgwBgEB/wIBADAKBggqhkjOPQQDAwNoADBlAjEA8yPg\n8sntOhLwV2QXJ5LEaKSpo/fnE3uOgTadK73fDhyjiqr0Io9GVuQTYqBPbQ2TAjBg\neuApmBS486+iei03lRrp139dPw6k28jjGNvWsAU7A1N86J1zPJVDEyVH+nMAWC0=\n-----END CERTIFICATE-----",
+      "crossSigns": [
+        {
+          "issuer": "AAA Certificate Services",
+          "issuerOperator": "Sectigo",
+          "ccadb": "A012350",
+          "serial": "d6a5ef613b390f32ef9cdf349f772841",
+          "sha256": "84112972b8e59d14560ae7e7119654474aad119990cf3722bfc1e3b91615e1fd",
+          "spkiSha256": "92c063d67e8f14db71d288e11266ffdaf69cbf115f7bab14f3bc2f68d25e0e30",
+          "revocation": {
+            "status": "revoked",
+            "date": "2026-10-19T10:35:36Z",
+            "reason": "ca_compromise",
+            "crl_url": "http://crl.comodoca.com/AAACertificateServices.crl"
+          }
+        }
+      ]
+    }
+  ],
+  "roots": [
+    {
+      "name": "emSign ECC Root CA - G3",
+      "operator": "eMudhra Technologies Limited",
+      "action": "block",
+      "reason": "Chrome Root Store removal. The Chrome Root Program said this root signed the compromised CA certificates and that removal ships for Chrome Root Store clients on 2026-10-27 PDT (sooner on Canary and Beta).",
+      "sha256": "86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b",
+      "spkiSha256": "8d417db2dd8bf5e3084d1e3f196d583849d81bdd4c00c70b9d39369e96b8c782",
+      "sources": [
+        "https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/",
+        "https://www.openwall.com/lists/oss-security/2026/10/20/1",
+        "https://ssl-tools.net/subjects/704b80e92c15138ab8bef8cad0f2ed793ab3697c"
+      ]
+    },
+    {
+      "name": "emSign Root TLS CA - G3",
+      "operator": "eMudhra Technologies Limited",
+      "action": "record-only",
+      "reason": "Issuer of the six compromised TLS intermediates. Not blanket-blocked: other intermediates under this root have issued subscriber certificates. Compromised keys are blocked by SPKI.",
+      "sha256": "7dd78d5f4f13459a83dff9abbba62edbaf6f2d102bf257fd712f4d9f2746ed8d",
+      "spkiSha256": "c619e4780ed8e0abeda24ad732567de4383a7ea941338f6d1a7d1b49ac792fe9",
+      "sources": [
+        "https://www.openwall.com/lists/oss-security/2026/10/20/1",
+        "https://emudhra.we-have-a-problem.com/impacted-intermediates.json"
+      ]
+    },
+    {
+      "name": "emSign Root CS CA - G3",
+      "operator": "eMudhra Technologies Limited",
+      "action": "record-only",
+      "reason": "Issuer of the two compromised code-signing intermediates. Block those keys by SPKI rather than the whole root.",
+      "sha256": null,
+      "spkiSha256": null,
+      "sources": [
+        "https://www.openwall.com/lists/oss-security/2026/10/20/1"
+      ]
+    },
+    {
+      "name": "AAA Certificate Services",
+      "operator": "Sectigo",
+      "action": "record-only",
+      "reason": "Cross-signed the eight compromised intermediates. Blanket distrust would reject unrelated Sectigo subscribers. The cross-signs share the compromised SPKIs and are blocked that way.",
+      "sha256": "d7a7a0fb5d7e2731d771e9484ebcdef71d5f0c3e0a2948782bc83ee0ea699ef4",
+      "spkiSha256": "bd153ed7b0434f6886b17bce8bbe84ed340c7132d702a8f4fa318f756ecbd6f3",
+      "sources": [
+        "https://www.openwall.com/lists/oss-security/2026/10/20/1"
+      ]
+    }
+  ]
+}

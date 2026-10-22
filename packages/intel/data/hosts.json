@@ -1,0 +1,35 @@
+{
+  "publicSuffixes": [
+    "com", "org", "net", "edu", "io", "co", "ai", "app", "dev", "uk", "us",
+    "co.uk", "org.uk", "ac.uk", "com.au", "co.jp", "co.in", "com.br", "co.za",
+    "github.io", "pages.dev", "netlify.app", "vercel.app", "herokuapp.com",
+    "ngrok.io", "ngrok-free.app", "web.app", "firebaseapp.com", "azurewebsites.net",
+    "workers.dev", "cloudfront.net", "wordpress.com", "blogspot.com", "wixsite.com",
+    "webflow.io", "glitch.me", "repl.co", "fly.dev", "onrender.com", "r2.dev", "supabase.co"
+  ],
+  "freeHosting": [
+    "github.io", "pages.dev", "netlify.app", "vercel.app", "herokuapp.com",
+    "ngrok.io", "ngrok-free.app", "web.app", "firebaseapp.com", "azurewebsites.net",
+    "workers.dev", "wordpress.com", "blogspot.com", "wixsite.com", "webflow.io",
+    "glitch.me", "repl.co", "fly.dev", "onrender.com", "r2.dev"
+  ],
+  "suspiciousTlds": ["zip", "mov", "tk", "ml", "ga", "cf", "gq", "xyz", "top", "click", "buzz", "rest", "cyou", "loan", "cam", "monster"],
+  "brands": [
+    { "id": "google", "names": ["google"], "domains": ["google.com", "google.co.uk", "gmail.com", "youtube.com"] },
+    { "id": "apple", "names": ["apple", "icloud"], "domains": ["apple.com", "icloud.com"] },
+    { "id": "microsoft", "names": ["microsoft", "outlook", "office", "hotmail"], "domains": ["microsoft.com", "office.com", "outlook.com", "live.com", "hotmail.com", "microsoftonline.com"] },
+    { "id": "amazon", "names": ["amazon"], "domains": ["amazon.com", "amazon.co.uk"] },
+    { "id": "paypal", "names": ["paypal"], "domains": ["paypal.com", "paypal.me"] },
+    { "id": "facebook", "names": ["facebook"], "domains": ["facebook.com", "fb.com"] },
+    { "id": "instagram", "names": ["instagram"], "domains": ["instagram.com"] },
+    { "id": "netflix", "names": ["netflix"], "domains": ["netflix.com"] },
+    { "id": "github", "names": ["github"], "domains": ["github.com"] },
+    { "id": "coinbase", "names": ["coinbase"], "domains": ["coinbase.com"] },
+    { "id": "binance", "names": ["binance"], "domains": ["binance.com"] },
+    { "id": "dropbox", "names": ["dropbox"], "domains": ["dropbox.com"] },
+    { "id": "adobe", "names": ["adobe"], "domains": ["adobe.com"] },
+    { "id": "linkedin", "names": ["linkedin"], "domains": ["linkedin.com"] },
+    { "id": "chase", "names": ["chase"], "domains": ["chase.com"] },
+    { "id": "wellsfargo", "names": ["wellsfargo"], "domains": ["wellsfargo.com"] }
+  ]
+}

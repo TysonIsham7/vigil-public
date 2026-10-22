@@ -1,0 +1,15 @@
+{
+  "id": "LITELLM-1.107.0",
+  "published": "2026-10-21",
+  "package": "litellm",
+  "ecosystem": "PyPI",
+  "version": "1.107.0",
+  "dockerTags": ["1.107.0", "v1.107.0"],
+  "summary": "LiteLLM 1.107.0 wheels on PyPI and the matching official images carried a credential stealer (cook.pth) and a remote code loader (sitecustomize.py). The release was removed from PyPI and the poisoned tags were yanked.",
+  "remediation": "Remove cook.pth, cook.py, and sitecustomize.py before starting Python again. Pin litellm==1.106.2 and rebuild images from a clean tree. Rotate credentials the host could reach.",
+  "sources": [
+    "https://github.com/BerriAI/litellm/issues/47826",
+    "https://www.wiz.io/blog/litellm-compromised-steals-credentials",
+    "https://www.chainguard.dev/unchained/litellm-attacked-again-malicious-1-107-0-wheels-on-pypi-and-docker-hub-october-2026"
+  ]
+}

@@ -1,0 +1,9 @@
+lockfileVersion: "9.0"
+
+packages:
+
+  left-pad@1.3.0:
+    resolution: {integrity: sha}
+
+  '@scope/pkg@2.0.1':
+    resolution: {integrity: sha}

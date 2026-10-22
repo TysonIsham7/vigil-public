@@ -1,0 +1,125 @@
+# XcodeGen spec for the Safari container. The committed Vigil.xcodeproj matches
+# these targets. Generate with `xcodegen generate` from this directory only
+# after reviewing the diff: the checked-in project is what the Mac builds.
+#
+# Do not set CONTENTS_FOLDER_PATH, INFOPLIST_PATH, EXECUTABLE_PATH,
+# EXECUTABLE_FOLDER_PATH, UNLOCALIZED_RESOURCES_FOLDER_PATH, WRAPPER_EXTENSION,
+# WRAPPER_NAME, or PRODUCT_BUNDLE_PACKAGE_TYPE. The product type already places
+# those paths inside the .app or .appex. Hand-set values are relative to the
+# products directory, so Info.plist and Contents land beside the wrappers.
+name: Vigil
+options:
+  minimumXcodeGenVersion: 2.42.0
+  deploymentTarget:
+    macOS: "14.0"
+  groupSortPosition: top
+  createIntermediateGroups: true
+configs:
+  Debug: debug
+  Release: release
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: XXXXXXXXXX
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: NO
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    SWIFT_DEFAULT_ACTOR_ISOLATION: nonisolated
+    SWIFT_STRICT_CONCURRENCY: minimal
+    MARKETING_VERSION: "2.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_EMIT_LOC_STRINGS: YES
+  configs:
+    Release:
+      VALIDATE_PRODUCT: YES
+targets:
+  Vigil macOS:
+    type: application
+    platform: macOS
+    sources:
+      - path: Shared (App)
+    dependencies:
+      - target: Vigil macOS Extension
+        embed: true
+        codeSign: false
+        removeHeaders: true
+    settings:
+      base:
+        PRODUCT_NAME: VigilMac
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.vigil.macos
+        INFOPLIST_FILE: macOS (App)/Info.plist
+        CODE_SIGN_ENTITLEMENTS: macOS (App)/Vigil.entitlements
+        ENABLE_HARDENED_RUNTIME: NO
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        COMBINE_HIDPI_IMAGES: YES
+        LD_RUNPATH_SEARCH_PATHS:
+          - $(inherited)
+          - "@executable_path/../Frameworks"
+  Vigil macOS Extension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Shared (Extension)
+        excludes:
+          - Resources
+          - Resources/**
+      - path: Shared (Extension)/Resources
+        type: folder
+        buildPhase: resources
+    dependencies: []
+    preBuildScripts:
+      - name: Generate blocklist
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - $(SRCROOT)/../../packages/intel/data/distrusted-cas.json
+          - $(SRCROOT)/../../packages/intel/src/version.ts
+          - $(SRCROOT)/scripts/generate-blocklist.py
+        outputFiles:
+          - $(SRCROOT)/Shared (Extension)/Generated/DistrustedCAs.swift
+        script: |
+          if [ -x /usr/bin/python3 ]; then /usr/bin/python3 "${SRCROOT}/scripts/generate-blocklist.py"; else python3 "${SRCROOT}/scripts/generate-blocklist.py"; fi
+    settings:
+      base:
+        PRODUCT_NAME: VigilMacExtension
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.vigil.macos.extension
+        INFOPLIST_FILE: macOS (Extension)/Info.plist
+        CODE_SIGN_ENTITLEMENTS: macOS (Extension)/Vigil.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        ENABLE_HARDENED_RUNTIME: NO
+        SKIP_INSTALL: YES
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        LD_RUNPATH_SEARCH_PATHS:
+          - $(inherited)
+          - "@executable_path/../Frameworks"
+          - "@executable_path/../../../../Frameworks"
+  Vigil macOS Tests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Vigil macOS Tests
+        excludes:
+          - Info.plist
+    dependencies:
+      - target: Vigil macOS Extension
+    settings:
+      base:
+        PRODUCT_NAME: VigilTests
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.vigil.macos.tests
+        INFOPLIST_FILE: Vigil macOS Tests/Info.plist
+        ENABLE_HARDENED_RUNTIME: NO
+        ENABLE_TESTING_SEARCH_PATHS: YES
+        SWIFT_EMIT_LOC_STRINGS: NO
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        LD_RUNPATH_SEARCH_PATHS:
+          - $(inherited)
+          - "@executable_path/../Frameworks"
+          - "@loader_path/../Frameworks"
+schemes:
+  Vigil macOS:
+    build:
+      targets:
+        Vigil macOS: all
+        Vigil macOS Tests: [running, testing, analyzing]
+    test:
+      targets:
+        - Vigil macOS Tests

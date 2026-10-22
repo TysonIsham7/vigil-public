@@ -1,0 +1,17 @@
+{
+  "id": "GO-1.27.3-EMUDHRA",
+  "cve": "CVE-2026-111943",
+  "published": "2026-10-20",
+  "component": "go",
+  "summary": "Go 1.27.3 and 1.26.10 stop trusting certificate chains that contain the eight compromised eMudhra intermediate keys. Older Go toolchains do not apply that filter until they are upgraded and programs are rebuilt.",
+  "fixedLines": [
+    { "major": 1, "minor": 27, "patch": 3 },
+    { "major": 1, "minor": 26, "patch": 10 }
+  ],
+  "remediation": "Install Go 1.27.3 or, on the 1.26 line, Go 1.26.10, and rebuild programs that verify TLS.",
+  "sources": [
+    "https://go.dev/doc/devel/release#go1.27.3",
+    "https://www.openwall.com/lists/oss-security/2026/10/20/29",
+    "https://github.com/golang/go/blob/master/src/crypto/x509/verify.go"
+  ]
+}

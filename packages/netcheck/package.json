@@ -1,0 +1,14 @@
+{
+  "name": "@vigil/netcheck",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Node TLS, DNS, RDAP, and OSV checks. No code execution of scanned input.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@vigil/core": "workspace:*",
+    "@vigil/intel": "workspace:*"
+  }
+}
