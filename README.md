@@ -11,7 +11,7 @@
 
 Vigil is an early first-pass check for certificates, lookalike sites, and a few known advisories. It is not an audit, not antivirus, and not a store release. A green result means the checks below did not fire. It does not mean the site, the server, or the account is safe.
 
-The Chrome extension and the command-line helper run today. The macOS Safari container has built with Xcode 27.1 when code signing is turned off for the compile. iOS, including Safari on iPhone, is an upcoming release and is not in this tree. See [Safari](#safari).
+The Chrome extension and the command-line helper run today. macOS Safari and iOS, including Safari on iPhone, are in this tree. Build them yourself in Xcode. They are not an App Store release. The macOS scheme **Vigil macOS** has built with Xcode 27.1 when code signing is turned off for the compile. The iOS scheme **Vigil iOS** copies extension web files to the appex root so the simulator embed check can read Info.plist. Verify that build on a Mac. See [Safari and iOS](#safari-and-ios).
 
 ## What Vigil catches
 
@@ -49,7 +49,7 @@ A page and a certificate also do not show the host kernel behind a site. `KERNEL
 | `packages/netcheck` | Pinned Mozilla TLS, RDAP age, OSV, URL composition |
 | `apps/cli` | `vigil scan`, `check-url`, `deps`, `doctor`, `serve`, `native-host` |
 | `apps/extension` | Chrome MV3 extension. High Security Mode holds unknown sites. Not a store release. |
-| `apps/safari` | macOS Safari container for the same extension. iOS is an upcoming release and is not included. Placeholder team id. Not an App Store release. |
+| `apps/safari` | macOS and iOS container for the same extension. Placeholder team id. Not an App Store release. |
 | `fixtures/` | Vulnerable, clean, phishing, lockfile, and toolchain samples |
 | `docs/TAXONOMY.md` | How findings map to the eleven domains, NIST CSF 2.0, and CIS Controls v8.1 |
 | `docs/agent-skill-vuln-watch.md` | A routine someone can give their own agent for public vulnerability announcements |
@@ -102,12 +102,10 @@ pnpm vigil install-native-host --extension-id hldpadjbahmnkhfchiikihdofpelfjne
 
 Quit Chrome and open it again. The helper field can stay blank. See `docs/EXTENSION.md` for the host paths and the red-team checklist.
 
-## Safari
+## Safari and iOS
 
-`pnpm build` copies the same background, hold page, and popup into `apps/safari/Shared (Extension)/Resources`, with the Safari manifest. Open `apps/safari/Vigil.xcodeproj` on a Mac after that build. The committed team id is `XXXXXXXXXX`. The bundle ids in this tree are `com.example.vigil.macos` and `com.example.vigil.macos.extension`. Set the team in Xcode and leave that change uncommitted.
+`pnpm build` copies the same background, hold page, and popup into `apps/safari/Shared (Extension)/Resources`, with the Safari manifest. Open `apps/safari/Vigil.xcodeproj` on a Mac after that build. The committed team id is `XXXXXXXXXX` and the bundle ids are `com.example.vigil.*`. Set the team in Xcode and leave that change uncommitted.
 
-On Safari, the certificate check runs in the app through `runtime.sendNativeMessage`. `vigil serve` on `127.0.0.1:8787` is the fallback when that call fails. Build and test steps are in `docs/SAFARI-TESTING.md`. This is a local Xcode run. It is not an App Store or TestFlight release.
+On Safari, the certificate check runs in the app through `runtime.sendNativeMessage`. `vigil serve` on `127.0.0.1:8787` is the fallback when that call fails. On an iPhone, `127.0.0.1` is the phone. Build and test steps, including the `xcodebuild` commands, are in `docs/SAFARI-TESTING.md`. This is a local Xcode run. It is not an App Store or TestFlight release.
 
-The macOS scheme **Vigil macOS** has built with Xcode 27.1 and `CODE_SIGNING_ALLOWED=NO`. Linux cannot run `xcodebuild`, so this repository's checks do not claim a Safari build.
-
-iOS, including Safari on iPhone, is coming soon. This release does not include an iOS app, an iOS extension, or an iOS scheme.
+The macOS scheme **Vigil macOS** has built with Xcode 27.1 and `CODE_SIGNING_ALLOWED=NO`. The iOS scheme **Vigil iOS** copies extension files to the appex root. A directory named `Resources` in that appex makes `embeddedBinaryValidationUtility` report `Couldn't load Info dictionary` even when the plist and the signature are valid. `NativeCertCheck.nameMatches` wraps the common name in an array so that iOS target typechecks. Linux `pnpm test` does not compile Swift. The Mac command is in `docs/SAFARI-TESTING.md`.

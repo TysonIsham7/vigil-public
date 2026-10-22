@@ -115,7 +115,7 @@ enum HTTPSHost {
 
     static func nameMatches(host: String, facts: CertificateFacts) -> Bool {
         let name = vigilFold(host).trimmingCharacters(in: CharacterSet(charactersIn: "."))
-        let patterns = facts.sanDns.isEmpty ? (facts.commonName.map { vigilFold($0) } ?? []) : facts.sanDns
+        let patterns = facts.sanDns.isEmpty ? (facts.commonName.map { [vigilFold($0)] } ?? []) : facts.sanDns
         return patterns.contains { dnsMatches(host: name, pattern: $0) }
     }
 

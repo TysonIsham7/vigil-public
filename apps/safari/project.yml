@@ -7,11 +7,17 @@
 # WRAPPER_NAME, or PRODUCT_BUNDLE_PACKAGE_TYPE. The product type already places
 # those paths inside the .app or .appex. Hand-set values are relative to the
 # products directory, so Info.plist and Contents land beside the wrappers.
+#
+# iOS targets set ENABLE_DEBUG_DYLIB and ENABLE_PREVIEWS to NO so the appex
+# is not a debug-dylib bundle. A signed Xcode 27.1 simulator build with those
+# off still fails ValidateEmbeddedBinary ("Couldn't load Info dictionary").
+# The settings stay off. They are not the cause of that failure.
 name: Vigil
 options:
   minimumXcodeGenVersion: 2.42.0
   deploymentTarget:
     macOS: "14.0"
+    iOS: "18.0"
   groupSortPosition: top
   createIntermediateGroups: true
 configs:
@@ -92,6 +98,78 @@ targets:
           - $(inherited)
           - "@executable_path/../Frameworks"
           - "@executable_path/../../../../Frameworks"
+  Vigil iOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: Shared (App)
+    dependencies:
+      - target: Vigil iOS Extension
+        embed: true
+        codeSign: false
+        removeHeaders: true
+    settings:
+      base:
+        PRODUCT_NAME: VigilIOS
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.vigil.ios
+        INFOPLIST_FILE: iOS (App)/Info.plist
+        CODE_SIGN_ENTITLEMENTS: iOS (App)/Vigil.entitlements
+        ENABLE_DEBUG_DYLIB: NO
+        ENABLE_PREVIEWS: NO
+        SDKROOT: iphoneos
+        SUPPORTED_PLATFORMS: iphoneos iphonesimulator
+        IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        LD_RUNPATH_SEARCH_PATHS:
+          - $(inherited)
+          - "@executable_path/Frameworks"
+  Vigil iOS Extension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Shared (Extension)
+        excludes:
+          - Resources
+          - Resources/**
+    # Copy the files, not the Resources directory. A directory with that
+    # name makes embeddedBinaryValidationUtility fail to load Info.plist.
+    postBuildScripts:
+      - name: Copy extension resources
+        basedOnDependencyAnalysis: false
+        script: |
+          dest="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
+          mkdir -p "${dest}"
+          cp -R "${SRCROOT}/Shared (Extension)/Resources/." "${dest}/"
+          rm -f "${dest}/.gitkeep"
+    preBuildScripts:
+      - name: Generate blocklist
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - $(SRCROOT)/../../packages/intel/data/distrusted-cas.json
+          - $(SRCROOT)/../../packages/intel/src/version.ts
+          - $(SRCROOT)/scripts/generate-blocklist.py
+        outputFiles:
+          - $(SRCROOT)/Shared (Extension)/Generated/DistrustedCAs.swift
+        script: |
+          if [ -x /usr/bin/python3 ]; then /usr/bin/python3 "${SRCROOT}/scripts/generate-blocklist.py"; else python3 "${SRCROOT}/scripts/generate-blocklist.py"; fi
+    settings:
+      base:
+        PRODUCT_NAME: VigilIOSExtension
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.vigil.ios.extension
+        INFOPLIST_FILE: iOS (Extension)/Info.plist
+        CODE_SIGN_ENTITLEMENTS: iOS (Extension)/Vigil.entitlements
+        ENABLE_DEBUG_DYLIB: NO
+        ENABLE_PREVIEWS: NO
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        SDKROOT: iphoneos
+        SUPPORTED_PLATFORMS: iphoneos iphonesimulator
+        IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        LD_RUNPATH_SEARCH_PATHS:
+          - $(inherited)
+          - "@executable_path/Frameworks"
+          - "@executable_path/../../Frameworks"
   Vigil macOS Tests:
     type: bundle.unit-test
     platform: macOS
@@ -123,3 +201,7 @@ schemes:
     test:
       targets:
         - Vigil macOS Tests
+  Vigil iOS:
+    build:
+      targets:
+        Vigil iOS: all

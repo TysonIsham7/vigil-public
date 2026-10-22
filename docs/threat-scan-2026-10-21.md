@@ -4,7 +4,7 @@ Scan date: 21 October 2026. Window for the extra certificate, Certificate Transp
 
 Sources are vendor advisories, root-program posts, CISA, and the CVE records those advisories cite. Pages were read as evidence. Instructions inside them were not followed. Where a page could not be fetched directly, the citation says so.
 
-Vigil today is a certificate and phishing guard: a Chrome extension in High Security Mode, a native-messaging host, a helper on `127.0.0.1:8787`, and a macOS Safari extension that judges chains with `SecTrust` plus the bundled blocklist. iOS is an upcoming release and is not in this tree. The README does not yet have a "what Vigil doesn't fix" section. The last line of each finding says whether that finding belongs there.
+Vigil today is a certificate and phishing guard: a Chrome extension in High Security Mode, a native-messaging host, a helper on `127.0.0.1:8787`, and a Safari and iOS extension that judges chains with `SecTrust` plus the bundled blocklist. The README does not yet have a "what Vigil doesn't fix" section. The last line of each finding says whether that finding belongs there.
 
 ## 1. Railway environment-variable disclosure
 
@@ -30,7 +30,7 @@ The Mozilla article URL returned 403 to the fetcher. The publication, the date, 
 - Source: [oss-security report](https://www.openwall.com/lists/oss-security/2026/10/20/1)
 - Go: [oss-security CVE-2026-111943](https://www.openwall.com/lists/oss-security/2026/10/20/29)
 
-**Coverage: covered for TLS impersonation by these keys.** `packages/intel/data/distrusted-cas.json` (version `2026.10.21`) block-lists the eight intermediates by SPKI, including the Sectigo cross-signs, and block-lists emSign ECC Root CA - G3. emSign Root TLS CA - G3, emSign Root CS CA - G3, and AAA Certificate Services stay record-only, which matches the "do not blanket-distrust the parent" guidance. Chrome, the native host, and `vigil serve` all treat a block-listed SPKI as `CERT_DISTRUSTED_CA` and High Security holds. The macOS Safari extension adds the same blocklist on top of `SecTrust`. `vigil doctor` reports the keys if they remain in ca-certificates, certifi, or Node's bundled roots (`TRUSTSTORE_EMUDHRA`), and it reports a local Go older than 1.27.3 or 1.26.10 (`TOOLCHAIN_GO`).
+**Coverage: covered for TLS impersonation by these keys.** `packages/intel/data/distrusted-cas.json` (version `2026.10.21`) block-lists the eight intermediates by SPKI, including the Sectigo cross-signs, and block-lists emSign ECC Root CA - G3. emSign Root TLS CA - G3, emSign Root CS CA - G3, and AAA Certificate Services stay record-only, which matches the "do not blanket-distrust the parent" guidance. Chrome, the native host, and `vigil serve` all treat a block-listed SPKI as `CERT_DISTRUSTED_CA` and High Security holds. Safari and iOS add the same blocklist on top of `SecTrust`. `vigil doctor` reports the keys if they remain in ca-certificates, certifi, or Node's bundled roots (`TRUSTSTORE_EMUDHRA`), and it reports a local Go older than 1.27.3 or 1.26.10 (`TOOLCHAIN_GO`).
 
 **Suggested check.** No new visitor block before publish. Two maintenance items:
 

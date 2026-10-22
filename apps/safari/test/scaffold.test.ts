@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -54,23 +54,25 @@ describe("Safari container", () => {
     for (const id of [
       "com.example.vigil.macos;",
       "com.example.vigil.macos.extension;",
+      "com.example.vigil.ios;",
+      "com.example.vigil.ios.extension;",
     ]) {
       expect(project).toContain(`PRODUCT_BUNDLE_IDENTIFIER = ${id}`);
     }
-    expect(project).not.toContain("com.example.vigil.ios");
     expect(project).toContain("com.apple.product-type.app-extension");
     expect(project).toContain("dstSubfolderSpec = 13;");
     expect(project).toContain('name = "Vigil macOS";');
+    expect(project).toContain('name = "Vigil iOS";');
     expect(project).toContain('name = "Vigil macOS Extension";');
+    expect(project).toContain('name = "Vigil iOS Extension";');
     expect(project).toContain('name = "Vigil macOS Tests";');
-    expect(project).not.toContain('name = "Vigil iOS"');
     expect(project).toContain("PRODUCT_BUNDLE_IDENTIFIER = com.example.vigil.macos.tests;");
     expect(project).toContain("generate-blocklist.py");
     expect(project).toContain("com.apple.product-type.bundle.unit-test");
     expect(project).toContain("GENERATE_INFOPLIST_FILE = NO;");
-    expect(project).not.toContain("PRODUCT_NAME = VigilIOS");
+    expect(project).toContain("PRODUCT_NAME = VigilIOSExtension;");
     expect(project).toContain("PRODUCT_NAME = VigilMacExtension;");
-    expect(project).not.toContain("VigilIOS");
+    expect(project).toContain("path = VigilIOSExtension.appex;");
     expect(project).toContain("path = VigilMacExtension.appex;");
     expect(project).not.toContain("VigilExtension.appex");
     expect(project).not.toContain("Vigil Extension.appex");
@@ -78,16 +80,15 @@ describe("Safari container", () => {
     expect(project).not.toContain("INFOPLIST_PATH");
     expect(project).not.toContain("WRAPPER_EXTENSION");
     expect(project).not.toContain("WRAPPER_NAME");
-    expect(project).not.toContain("TARGETED_DEVICE_FAMILY");
-    expect(project).not.toContain("iphoneos");
+    expect(project).toContain('TARGETED_DEVICE_FAMILY = "1,2";');
+    expect(project.match(/ENABLE_DEBUG_DYLIB = NO;/g)).toHaveLength(4);
+    expect(project.match(/ENABLE_PREVIEWS = NO;/g)).toHaveLength(4);
     expect(project).not.toContain("DEVELOPMENT_TEAM = \"\"");
     expect(read("Vigil.xcodeproj/xcshareddata/xcschemes/Vigil macOS.xcscheme")).toContain("A10000000000000000000050");
-    expect(existsSync(join(safariRoot, "Vigil.xcodeproj/xcshareddata/xcschemes/Vigil iOS.xcscheme"))).toBe(false);
-    expect(existsSync(join(safariRoot, "iOS (App)"))).toBe(false);
-    expect(existsSync(join(safariRoot, "iOS (Extension)"))).toBe(false);
+    expect(read("Vigil.xcodeproj/xcshareddata/xcschemes/Vigil iOS.xcscheme")).toContain("A10000000000000000000051");
   });
 
-  it("keeps the macOS appex name in one token and the extension plist keys complete", () => {
+  it("keeps the iOS appex name in one token and the extension plist keys complete", () => {
     expect(checkIosExtension()).toEqual([]);
     const run = spawnSync(process.execPath, ["apps/safari/scripts/check-ios-extension.mjs"], {
       cwd: repoRoot,
@@ -101,12 +102,14 @@ describe("Safari container", () => {
     const plists = [
       "macOS (App)/Info.plist",
       "macOS (Extension)/Info.plist",
+      "iOS (App)/Info.plist",
+      "iOS (Extension)/Info.plist",
     ].map((path) => read(path));
     for (const plist of plists) {
       expect(plist).toContain("<key>NSAllowsLocalNetworking</key>");
       expect(plist).not.toContain("NSAllowsArbitraryLoads");
     }
-    const extensionPlists = [plists[1]];
+    const extensionPlists = [plists[1], plists[3]];
     for (const plist of extensionPlists) {
       expect(plist).toContain("<string>com.apple.Safari.web-extension</string>");
       expect(plist).toContain("$(PRODUCT_MODULE_NAME).SafariWebExtensionHandler");
@@ -128,6 +131,8 @@ describe("Safari container", () => {
     expect(handler).not.toContain("SFExtensionMessageKey: message");
     expect(checker).toContain("SecTrustSetNetworkFetchAllowed");
     expect(checker).toContain('return ["error": "rejected"]');
+    expect(checker).toContain("facts.commonName.map { [vigilFold($0)] } ?? []");
+    expect(checker).not.toContain("facts.commonName.map { vigilFold($0) } ?? []");
   });
 
   it("keeps machine names, real team ids, and non-loopback addresses out of the container", () => {

@@ -33,3 +33,63 @@ jobs:
           grep trufflehog_3.99.3_linux_amd64.tar.gz .github/workflows/scanner-checksums.txt | (cd "$RUNNER_TEMP" && sha256sum -c -)
           tar -xzf "$RUNNER_TEMP/trufflehog_3.99.3_linux_amd64.tar.gz" -C "$RUNNER_TEMP" trufflehog
           "$RUNNER_TEMP/trufflehog" filesystem . --fail --no-update --exclude-paths .trufflehog-exclude
+
+  ios-swift:
+    if: github.event_name == 'pull_request'
+    runs-on: xcode-27
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Show the Xcode version
+        run: xcodebuild -version && xcode-select -p && sw_vers
+      - name: Compile the iOS extension
+        run: |
+          xcodebuild -project apps/safari/Vigil.xcodeproj \
+            -target "Vigil iOS Extension" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Build the iOS app without signing
+        run: |
+          xcodebuild -project apps/safari/Vigil.xcodeproj \
+            -scheme "Vigil iOS" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "${RUNNER_TEMP}/dd-compile" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Build the signed iOS scheme
+        continue-on-error: true
+        run: |
+          xcodebuild -project apps/safari/Vigil.xcodeproj \
+            -scheme "Vigil iOS" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "${RUNNER_TEMP}/dd-signed" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGNING_ALLOWED=YES \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            DEVELOPMENT_TEAM= \
+            build
+      - name: Compare the appex with a converter template
+        run: bash .github/scripts/diff-ios-embed.sh "${RUNNER_TEMP}/dd-compile" "${RUNNER_TEMP}/dd-signed" ios-embed-report.txt
+      - name: Summarize embed probes
+        if: always()
+        run: |
+          if [ -f ios-embed-report.txt ]; then
+            {
+              echo '## iOS embed probes'
+              echo
+              echo '```'
+              grep -E '^(XCODE|TOOL|PROBE |CONCLUSION|LIST |VERIFY |PLIST-KEYS |SETTING |MUTATE |TEMPLATE |CONVERTER )' ios-embed-report.txt || true
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: ios-embed-report
+          path: ios-embed-report.txt
+          if-no-files-found: warn

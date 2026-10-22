@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -19,6 +19,15 @@ const PRODUCTS = {
     infoPlist: "macOS (App)/Info.plist",
     bundleId: "com.example.vigil.macos",
   },
+  "Vigil iOS": {
+    productType: "com.apple.product-type.application",
+    fileType: "wrapper.application",
+    path: "VigilIOS.app",
+    sdk: "iphoneos",
+    infoPlist: "iOS (App)/Info.plist",
+    bundleId: "com.example.vigil.ios",
+    platforms: ["iphoneos", "iphonesimulator"],
+  },
   "Vigil macOS Extension": {
     productType: "com.apple.product-type.app-extension",
     fileType: "wrapper.app-extension",
@@ -26,6 +35,15 @@ const PRODUCTS = {
     sdk: "macosx",
     infoPlist: "macOS (Extension)/Info.plist",
     bundleId: "com.example.vigil.macos.extension",
+  },
+  "Vigil iOS Extension": {
+    productType: "com.apple.product-type.app-extension",
+    fileType: "wrapper.app-extension",
+    path: "VigilIOSExtension.appex",
+    sdk: "iphoneos",
+    infoPlist: "iOS (Extension)/Info.plist",
+    bundleId: "com.example.vigil.ios.extension",
+    platforms: ["iphoneos", "iphonesimulator"],
   },
   "Vigil macOS Tests": {
     productType: "com.apple.product-type.bundle.unit-test",
@@ -51,16 +69,10 @@ const WRAPPER_OVERRIDES = [
 export function checkIosExtension(root = safariRoot) {
   const errors = [];
   const project = readFileSync(join(root, "Vigil.xcodeproj/project.pbxproj"), "utf8");
-  const plist = readFileSync(join(root, "macOS (Extension)/Info.plist"), "utf8");
-  for (const rel of ["iOS (App)", "iOS (Extension)", "Vigil.xcodeproj/xcshareddata/xcschemes/Vigil iOS.xcscheme"]) {
-    if (existsSync(join(root, rel))) errors.push(`${rel} must stay out of this release`);
-  }
+  const plist = readFileSync(join(root, "iOS (Extension)/Info.plist"), "utf8");
   const objects = parseObjects(project);
   const targets = [...objects.values()].filter((item) => item.isa === "PBXNativeTarget");
-  if (targets.length !== 3) errors.push(`expected 3 native targets, found ${targets.length}`);
-  if (project.includes("iphoneos") || project.includes("VigilIOS") || targets.some((target) => target.name?.includes("iOS"))) {
-    errors.push("this release must not include an iOS target");
-  }
+  if (targets.length < 5) errors.push(`expected 5 native targets, found ${targets.length}`);
 
   const productNames = new Map();
   const productPaths = new Map();
@@ -96,23 +108,53 @@ export function checkIosExtension(root = safariRoot) {
   for (const key of WRAPPER_OVERRIDES) {
     if (specLines.has(`${key}:`) || spec.includes(`${key}:`)) errors.push(`project.yml must not set ${key}`);
   }
-  if (spec.includes("Vigil iOS") || spec.includes("com.example.vigil.ios")) {
-    errors.push("project.yml must not describe an iOS target");
+  for (const line of ["ENABLE_DEBUG_DYLIB: NO", "ENABLE_PREVIEWS: NO"]) {
+    const count = spec.split("\n").filter((row) => row.trim() === line).length;
+    if (count !== 2) errors.push(`project.yml must set ${line} on the iOS app and the iOS extension`);
   }
   for (const product of Object.values(PRODUCTS)) {
     const productName = product.path.slice(0, product.path.lastIndexOf("."));
     if (!specLines.has(`PRODUCT_NAME: ${productName}`)) errors.push(`project.yml is missing PRODUCT_NAME ${productName}`);
   }
   const macApp = targets.find((target) => target.name === "Vigil macOS");
+  const iosApp = targets.find((target) => target.name === "Vigil iOS");
   const macExtension = targets.find((target) => target.name === "Vigil macOS Extension");
-  if (!macApp || !macExtension) errors.push("missing the macOS app or extension target");
-  if (macApp && macExtension) {
-    checkEmbed(errors, objects, macApp, macExtension, null);
+  const iosExtension = targets.find((target) => target.name === "Vigil iOS Extension");
+  if (!macApp || !iosApp || !macExtension || !iosExtension) errors.push("missing an app or extension target");
+  if (macApp && macExtension && iosExtension) {
+    checkEmbed(errors, objects, macApp, macExtension, iosExtension);
     checkBundlePrefix(errors, objects, macApp, macExtension);
+  }
+  if (iosApp && iosExtension && macExtension) {
+    checkEmbed(errors, objects, iosApp, iosExtension, macExtension);
+    checkBundlePrefix(errors, objects, iosApp, iosExtension);
   }
   checkPlist(errors, plist);
   checkSchemes(errors, root);
+  if (iosExtension) checkIosResourceLayout(errors, objects, iosExtension);
   return errors;
+}
+
+function checkIosResourceLayout(errors, objects, iosExtension) {
+  let copiesContents = false;
+  for (const phaseId of iosExtension.buildPhases) {
+    const phase = objects.get(phaseId);
+    if (!phase) continue;
+    if (phase.isa === "PBXResourcesBuildPhase") {
+      for (const fileId of phase.files) {
+        const buildFile = objects.get(fileId);
+        const fileRef = idOf(setting(buildFile?.body ?? "", "fileRef"));
+        const ref = fileRef ? objects.get(fileRef) : null;
+        if (setting(ref?.body ?? "", "lastKnownFileType") === "folder") {
+          errors.push("iOS extension must not copy a folder into the appex");
+        }
+      }
+    }
+    if (phase.isa === "PBXShellScriptBuildPhase" && phase.body.includes("Shared (Extension)/Resources/.")) {
+      copiesContents = true;
+    }
+  }
+  if (!copiesContents) errors.push("iOS extension must copy resource files into the appex root");
 }
 
 function checkProduct(errors, target, configs, product) {
@@ -135,6 +177,14 @@ function checkProduct(errors, target, configs, product) {
     if (setting(config.body, "INFOPLIST_FILE") !== expected.infoPlist) errors.push(`${label} INFOPLIST_FILE must be ${expected.infoPlist}`);
     if (setting(config.body, "PRODUCT_BUNDLE_IDENTIFIER") !== expected.bundleId) errors.push(`${label} bundle id must be ${expected.bundleId}`);
     if (setting(config.body, "GENERATE_INFOPLIST_FILE") !== "NO") errors.push(`${label} GENERATE_INFOPLIST_FILE must be NO`);
+    if (expected.sdk === "iphoneos") {
+      if (setting(config.body, "ENABLE_DEBUG_DYLIB") !== "NO") {
+        errors.push(`${label} ENABLE_DEBUG_DYLIB must be NO so the appex is not a debug dylib`);
+      }
+      if (setting(config.body, "ENABLE_PREVIEWS") !== "NO") {
+        errors.push(`${label} ENABLE_PREVIEWS must be NO so the appex does not contain __preview.dylib`);
+      }
+    }
     for (const key of WRAPPER_OVERRIDES) {
       if (setting(config.body, key) !== null) errors.push(`${label} must not set ${key}`);
     }
@@ -193,10 +243,12 @@ function checkPlist(errors, plist) {
 }
 
 function checkSchemes(errors, root) {
+  const ios = readFileSync(join(root, "Vigil.xcodeproj/xcshareddata/xcschemes/Vigil iOS.xcscheme"), "utf8");
   const mac = readFileSync(join(root, "Vigil.xcodeproj/xcshareddata/xcschemes/Vigil macOS.xcscheme"), "utf8");
+  if (!ios.includes('BuildableName = "VigilIOS.app"')) errors.push("iOS scheme must build VigilIOS.app");
   if (!mac.includes('BuildableName = "VigilMac.app"')) errors.push("macOS scheme must build VigilMac.app");
-  if (mac.includes('BuildableName = "Vigil.app"') || mac.includes("VigilIOS")) {
-    errors.push("the macOS scheme must build only the macOS app");
+  if (ios.includes('BuildableName = "Vigil.app"') || mac.includes('BuildableName = "Vigil.app"')) {
+    errors.push("a scheme still builds the shared Vigil.app product");
   }
 }
 
