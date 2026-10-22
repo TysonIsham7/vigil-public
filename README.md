@@ -1,5 +1,14 @@
 # Vigil
 
+<p>
+  <img src="docs/screenshots/vigil-blocked-cert.png" alt="Vigil blocks a site with a distrusted certificate, failed TLS check, and 2-day-old domain" width="49%">
+  <img src="docs/screenshots/vigil-lookalike.png" alt="Vigil blocks a lookalike of apple" width="49%">
+</p>
+<p>
+  <img src="docs/screenshots/vigil-held-timeout.png" alt="High Security holds a page when the check does not finish in 2 seconds" width="49%">
+  <img src="docs/screenshots/vigil-popup-headers.jpg" alt="The Vigil popup listing missing security headers on a site" width="49%">
+</p>
+
 Vigil is an early first-pass check for certificates, lookalike sites, and a few known advisories. It is not an audit, not antivirus, and not a store release. A green result means the checks below did not fire. It does not mean the site, the server, or the account is safe.
 
 The Chrome extension and the command-line helper run today. The macOS Safari container has built with Xcode 27.1 when code signing is turned off for the compile. iOS, including Safari on iPhone, is an upcoming release and is not in this tree. See [Safari](#safari).
