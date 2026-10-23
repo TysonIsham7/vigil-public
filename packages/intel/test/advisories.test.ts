@@ -7,6 +7,8 @@ import {
   isCompromisedLitellm,
   nodeMissingSecurityRelease,
   litellmImage,
+  phpSessionAdvisory,
+  phpSessionProgressNote,
   phpVulnerable,
 } from "../src/index.js";
 
@@ -34,6 +36,16 @@ describe("advisories", () => {
     expect(visitor).toMatchObject({ status: "vulnerable", recommendationOnly: true, severity: "high", level: "warn" });
     expect(evaluatePhp({ headers: { server: "Apache" }, setCookies: ["PHPSESSID=1"], audience: "owner" }).status).toBe("suspected");
     expect(evaluatePhp({ headers: { "x-powered-by": "PHP/8.2.35" }, audience: "owner" }).status).toBe("fixed");
+  });
+
+  it("keeps CVE-2026-115560 informational until PHP publishes a fixed release", () => {
+    expect(phpSessionAdvisory.fixed).toEqual([]);
+    expect(phpSessionAdvisory.cves).toEqual(["CVE-2026-115560"]);
+    const note = phpSessionProgressNote("8.5.12");
+    expect(note.id).toBe("PHP_CVE_2026_115560");
+    expect(note.summary).toMatch(/8\.5\.12/);
+    expect(note.remediation[0]).toMatch(/session\.upload_progress\.enabled=0/);
+    expect(note.remediation[0]).toMatch(/does not block a deploy/);
   });
 
   it("uses the curl patched branches instead of every build before 8.23.0", () => {

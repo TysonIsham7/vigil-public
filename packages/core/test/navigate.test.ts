@@ -131,6 +131,8 @@ describe("navigation gate", () => {
     expect(suspected.intercept).toBe(false);
     const litellm = after([signal({ id: "DEP_LITELLM_COMPROMISED", severity: "critical", recommendationOnly: false })]);
     expect(litellm.action).toBe("block");
+    const session = after([signal({ id: "PHP_CVE_2026_115560", severity: "informational", recommendationOnly: true })]);
+    expect(session.intercept).toBe(false);
   });
 
   it("fails closed on timeout in High Security and does not cache an allow", () => {

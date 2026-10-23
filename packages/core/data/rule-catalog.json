@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.21.2",
+  "version": "2026.10.23.1",
   "frameworks": {
     "nistCsf": "2.0",
     "cis": "8.1"
@@ -106,6 +106,7 @@
     "DOMAIN_CREDENTIAL_CROSS_ORIGIN": { "domain": "human-factors", "nist": "PR.AA", "cis": { "control": 9, "safeguard": "9.3", "safeguardTitle": "Maintain and Enforce Network-Based URL Filters" } },
     "DOMAIN_CREDENTIAL_HTTP": { "domain": "human-factors", "nist": "PR.DS", "cis": { "control": 3, "safeguard": "3.10", "safeguardTitle": "Encrypt Sensitive Data in Transit" } },
     "PHP_CVE_2026_109618": { "domain": "application-software", "nist": "ID.RA", "cis": { "control": 7, "safeguard": "7.4", "safeguardTitle": "Perform Automated Application Patch Management" } },
+    "PHP_CVE_2026_115560": { "domain": "application-software", "nist": "ID.RA", "cis": { "control": 7, "safeguard": "7.4", "safeguardTitle": "Perform Automated Application Patch Management" } },
     "WP_FINGERPRINT": { "domain": "application-software", "nist": "ID.AM", "cis": { "control": 2, "safeguard": "2.1", "safeguardTitle": "Establish and Maintain a Software Inventory" } },
     "DEP_LITELLM_COMPROMISED": { "domain": "emerging-tech", "nist": "GV.SC", "cis": { "control": 16, "safeguard": "16.5", "safeguardTitle": "Use Up-to-Date and Trusted Third-Party Software Components" } },
     "DEP_OSV": { "domain": "application-software", "nist": "ID.RA", "cis": { "control": 7, "safeguard": "7.1", "safeguardTitle": "Establish and Maintain a Vulnerability Management Process" } },

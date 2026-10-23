@@ -31,6 +31,8 @@ describe("host verdict", () => {
     expect(php?.title).toBe("Upgrade PHP");
     expect(php?.summary.startsWith("Upgrade PHP")).toBe(true);
     expect(php?.summary).toMatch(/partial mitigation/);
+    expect(php?.summary).toMatch(/CVE-2026-115560/);
+    expect(result.signals.some((signal) => signal.id === "PHP_CVE_2026_115560")).toBe(false);
     expect(result.signals.some((signal) => signal.id === "KERNEL_SHARED_HOST")).toBe(false);
     const encoded = JSON.stringify(result);
     expect(encoded).not.toContain("BEGIN CERTIFICATE");

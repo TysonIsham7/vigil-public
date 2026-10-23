@@ -44,7 +44,7 @@ A safeguard id is stored only when that safeguard's wording is a fair descriptio
 | 3 | Data Protection | Secrets and tokens (`3.1`). HSTS, mixed content, and weak TLS (`3.10`). Referrer-Policy is control 3 with no safeguard, because a DLP safeguard would overstate the check. |
 | 4 | Secure Configuration of Enterprise Assets and Software | CSP, framing, Permissions-Policy, and certificate lifetime (`4.1`). |
 | 6 | Access Control Management | Cookie flags. No safeguard is set: the v8.1 MFA safeguards are a different control. |
-| 7 | Continuous Vulnerability Management | Confirmed PHP bugs and vulnerable base images (`7.4`). The local kernel version (`7.3`, operating-system patch management). OSV results (`7.1`). |
+| 7 | Continuous Vulnerability Management | Confirmed PHP bugs and vulnerable base images (`7.4`). `PHP_CVE_2026_115560` uses the same mapping and stays informational until PHP publishes a fixed version. The local kernel version (`7.3`, operating-system patch management). OSV results (`7.1`). |
 | 9 | Email and Web Browser Protections | Lookalikes and DNS signals (`9.2`). Distrusted CAs and URL-filter signals (`9.3`). |
 | 12 | Network Infrastructure Management | Hostname mismatch, self-signed leaves, and TLS that did not validate (`12.1`). |
 | 13 | Network Monitoring and Defense | CSP report-only, and missing embedded SCTs. No safeguard is set. |

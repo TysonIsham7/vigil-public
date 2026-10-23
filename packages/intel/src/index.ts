@@ -17,7 +17,10 @@ export {
   parseVersion,
   phpAdvisory,
   phpDetected,
+  phpSessionAdvisory,
+  phpSessionProgressNote,
   phpVulnerable,
+  PHP_SESSION_PROGRESS_ID,
   wordpressReadmeVersion,
   wordpressSignals,
 } from "./advisories.js";
