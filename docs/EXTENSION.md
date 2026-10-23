@@ -49,7 +49,7 @@ High Security keeps the hold page up only for:
 - Fake-site signals: lookalike, similar name, mixed script, new domain, brand impersonation, IP literal, credential-form risk.
 - Confirmed advisories: PHP `CVE-2026-109618` when a version is present, and exact LiteLLM `1.107.0`.
 
-Missing headers, `KERNEL_SHARED_HOST`, SCT absence, expiring or SHA-1 certificates, suspicious TLDs, free-hosting suffixes, and a PHP fingerprint with no version stay in the popup. They do not keep the hold page up.
+Missing headers, `KERNEL_SHARED_HOST`, SCT absence, expiring or SHA-1 certificates, suspicious TLDs, free-hosting suffixes, a PHP fingerprint with no version, and `PHP_CVE_2026_115560` stay in the popup. They do not keep the hold page up. `PHP_CVE_2026_115560` is the 23 October 2026 PHP note: no fixed release exists yet, so a version that already has the 21 October fixes is not held.
 
 A check that does not finish within 2 seconds fails closed in High Security. The hold page says so and still offers an override. A missing native host, or a loopback helper that is not running (connection refused), falls back to the next check and does not send the tab back to the hold page on the next request. Saving the helper address again retries the loopback helper. A native host or loopback helper that accepts the connection and never answers stays held, and that timeout is not cached as an allow. A native port that disconnects or a host process that exits mid-check stays held with helper unavailable, including when the hostname itself looks clean. A helper response for a different host is treated as a failed check and stays held.
 

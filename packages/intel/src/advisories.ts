@@ -4,8 +4,11 @@ import kernelAdvisory from "../advisories/kernel-cve-2026-99999.json" with { typ
 import litellmAdvisory from "../advisories/litellm-1.107.0.json" with { type: "json" };
 import nodeAdvisory from "../advisories/node-2026-10-21.json" with { type: "json" };
 import phpAdvisory from "../advisories/php-cve-2026-109618.json" with { type: "json" };
+import phpSessionAdvisory from "../advisories/php-cve-2026-115560.json" with { type: "json" };
 
-export { curlAdvisory, goAdvisory, kernelAdvisory, litellmAdvisory, nodeAdvisory, phpAdvisory };
+export { curlAdvisory, goAdvisory, kernelAdvisory, litellmAdvisory, nodeAdvisory, phpAdvisory, phpSessionAdvisory };
+
+export const PHP_SESSION_PROGRESS_ID = "PHP_CVE_2026_115560";
 
 export function parseVersion(input: string): number[] | null {
   const match = /(\d+)\.(\d+)\.(\d+)/.exec(input);
@@ -30,6 +33,24 @@ export function phpVulnerable(version: string): boolean {
   if (line) return (patch ?? 0) < line.patch;
   if (major > 8 || (major === 8 && minor > 5)) return false;
   return true;
+}
+
+/** Informational note for CVE-2026-115560. PHP has not published a fixed version. */
+export function phpSessionProgressNote(version?: string): {
+  id: typeof PHP_SESSION_PROGRESS_ID;
+  title: string;
+  summary: string;
+  remediation: string[];
+} {
+  const prefix = version
+    ? `PHP ${version} meets the 21 October 2026 releases. Those releases do not close CVE-2026-115560. `
+    : "PHP was detected. CVE-2026-115560 has no patched release yet. ";
+  return {
+    id: PHP_SESSION_PROGRESS_ID,
+    title: "PHP session upload progress",
+    summary: `${prefix}PHP has not published a fixed version. This note does not mean the unusual session configuration is present.`,
+    remediation: [phpSessionAdvisory.mitigation],
+  };
 }
 
 export function parsePhpVersion(headers: Record<string, string | undefined>): string | undefined {

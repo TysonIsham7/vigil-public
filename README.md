@@ -18,7 +18,7 @@ The Chrome extension and the command-line helper run today. macOS Safari and iOS
 - A certificate that chains through a block-listed key. The bundled list includes the eight compromised eMudhra intermediates and emSign ECC Root CA - G3. Record-only parent roots are not blanket-distrusted.
 - An expired certificate, a name that does not match the host, a self-signed leaf, or a TLS chain the pinned Mozilla roots reject.
 - Lookalike and homoglyph names, mixed-script labels, and a login form on a domain younger than seven days.
-- A page that discloses a PHP version below 8.2.35, 8.3.36, 8.4.27, or 8.5.12. The owner's scan blocks. A visitor scan warns. The finding says to upgrade PHP. `session.upload_progress.enabled=0` is only a partial mitigation.
+- A page that discloses a PHP version below 8.2.35, 8.3.36, 8.4.27, or 8.5.12. The owner's scan blocks. A visitor scan warns. The finding says to upgrade PHP. `session.upload_progress.enabled=0` is only a partial mitigation for CVE-2026-109619. A disclosed version at or above those releases still gets an informational note for CVE-2026-115560, which has no patched release yet. That note does not block a deploy or hold a page.
 - An exact LiteLLM 1.107.0 pin in a lockfile or Dockerfile.
 - On `vigil doctor`: a local Node below 22.23.4, 24.22.1, or 26.12.1 on that release line, an affected curl or Go, a local kernel in the PwnEscape range, and a trust store that still contains a distrusted eMudhra key. Doctor does not block a deploy.
 

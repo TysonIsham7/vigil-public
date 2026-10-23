@@ -17,6 +17,8 @@ import {
   disabledReputation,
   evaluatePhp,
   phpAdvisory,
+  phpSessionAdvisory,
+  phpSessionProgressNote,
   registrableDomain,
   wordpressReadmeVersion,
   wordpressSignals,
@@ -162,10 +164,25 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
       why: options.audience === "owner"
         ? "A confirmed vulnerable version on the owner's scan is a critical deploy block. A missing version stays a recommendation."
         : "A visitor scan warns instead of blocking, because the visitor does not control the server.",
-      remediation: [phpAdvisory.upgrade, phpAdvisory.mitigation],
+      remediation: [phpAdvisory.upgrade, phpAdvisory.mitigation, phpSessionAdvisory.mitigation],
       recommendationOnly: php.recommendationOnly,
       category: "vulnerability",
       confidence: php.version ? "high" : "medium",
+      evidence: php.version ?? "version not disclosed",
+    }));
+  }
+  if (php.status === "fixed") {
+    const note = phpSessionProgressNote(php.version);
+    extra.push(netFinding({
+      id: note.id,
+      severity: "informational",
+      title: note.title,
+      summary: note.summary,
+      why: "The 21 October 2026 PHP releases fix CVE-2026-109618 and CVE-2026-109619. PHP's 23 October note says they do not fix CVE-2026-115560, and no patched release exists yet.",
+      remediation: note.remediation,
+      recommendationOnly: true,
+      category: "vulnerability",
+      confidence: "medium",
       evidence: php.version ?? "version not disclosed",
     }));
   }
@@ -231,6 +248,18 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
             audience: options.audience,
             level: php.level === "ok" ? "ok" as const : php.level === "block" ? "block" as const : php.level === "info" ? "info" as const : "warn" as const,
             mitigation: `${phpAdvisory.upgrade} ${phpAdvisory.mitigation}`,
+          }]),
+      ...(php.status === "not-applicable"
+        ? []
+        : [{
+            advisoryId: phpSessionAdvisory.id,
+            cves: [...phpSessionAdvisory.cves],
+            component: "php",
+            ...(php.version ? { detectedVersion: php.version } : {}),
+            status: "suspected" as const,
+            audience: options.audience,
+            level: "info" as const,
+            mitigation: phpSessionAdvisory.mitigation,
           }]),
       ...(wp.present
         ? [{

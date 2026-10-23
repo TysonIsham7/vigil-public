@@ -1,3 +1,4 @@
 # Open follow-ups
 
+- When PHP publishes fixed version numbers for CVE-2026-115560, replace the informational `PHP_CVE_2026_115560` note with a version comparison. The 23 October 2026 note on php.net says the full advisory ships with the next regular bugfix release. Do not invent a fixed version before that page names one. Until then, `session.upload_progress.enabled=0` is PHP's interim advice for the unusual serialize-handler setup, and Vigil cannot see `php.ini`.
 - Re-check the emSign ECC Root CA - G3 Chrome root-store removal after Oct 27, 2026. Chrome said the removal ships for Chrome Root Store clients on 2026-10-27 PDT, sooner on Canary and Beta. `packages/intel/data/distrusted-cas.json` keeps that root block-listed until this re-check shows the outcome changed. Do not drop the block on the calendar date alone.
