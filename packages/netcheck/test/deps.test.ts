@@ -91,6 +91,20 @@ describe("doctor toolchain", () => {
     expect(nodeOk.some((finding) => finding.id === "TOOLCHAIN_NODE")).toBe(false);
     expect(assessToolchain({ nodeVersion: "v24.22.0" }).some((finding) => finding.id === "TOOLCHAIN_NODE")).toBe(true);
     expect(assessToolchain({ nodeVersion: "v26.12.1" }).some((finding) => finding.id === "TOOLCHAIN_NODE")).toBe(false);
+    const nginxOld = assessToolchain({ nginxVersion: "nginx version: nginx/1.31.6" });
+    const nginxStable = assessToolchain({ nginxVersion: "nginx version: nginx/1.30.6" });
+    expect(nginxOld.find((finding) => finding.id === "TOOLCHAIN_NGINX")?.recommendationOnly).toBe(true);
+    expect(nginxOld.find((finding) => finding.id === "TOOLCHAIN_NGINX")?.evidence).toBe("1.31.6");
+    expect(nginxStable.some((finding) => finding.id === "TOOLCHAIN_NGINX")).toBe(false);
+    const images = assessToolchain({
+      images: [
+        { image: "nginx:1.31.6", tag: "1.31.6", source: "Dockerfile", line: 3 },
+        { image: "nginx:1.31.7-alpine", tag: "1.31.7-alpine", source: "Dockerfile", line: 4 },
+        { image: "nginxinc/nginx-prometheus-exporter:1.0.0", tag: "1.0.0", source: "Dockerfile", line: 5 },
+      ],
+    });
+    expect(images.filter((finding) => finding.id === "TOOLCHAIN_IMAGE")).toHaveLength(1);
+    expect(images.find((finding) => finding.id === "TOOLCHAIN_IMAGE")?.evidence).toBe("nginx:1.31.6");
   });
 
   it("reports an affected uname and a trust store that still has an eMudhra key", () => {

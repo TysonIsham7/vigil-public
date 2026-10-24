@@ -1,4 +1,4 @@
-import { assessKernel, curlAdvisory, curlAffected, goAdvisory, goMissingTrustFix, kernelAdvisory, litellmAdvisory, nodeAdvisory, nodeMissingSecurityRelease } from "@vigil/intel";
+import { assessKernel, curlAdvisory, curlAffected, goAdvisory, goMissingTrustFix, kernelAdvisory, litellmAdvisory, nginxAdvisory, nginxMissingSecurityRelease, nodeAdvisory, nodeMissingSecurityRelease } from "@vigil/intel";
 import type { Finding } from "@vigil/core";
 import { parseDockerImages, type ImageRef } from "./deps.js";
 import { netFinding } from "./finding.js";
@@ -14,6 +14,7 @@ export function assessToolchain(input: {
   nodeVersion?: string | null;
   curlVersion?: string | null;
   goVersion?: string | null;
+  nginxVersion?: string | null;
   kernelRelease?: string | null;
   kernelOs?: string | null;
   trustBundles?: TrustBundle[];
@@ -52,6 +53,21 @@ export function assessToolchain(input: {
       evidence: curl,
     }));
   }
+  const nginx = input.nginxVersion ? versionToken(input.nginxVersion) : undefined;
+  if (nginx && nginxMissingSecurityRelease(nginx)) {
+    findings.push(netFinding({
+      id: "TOOLCHAIN_NGINX",
+      severity: "high",
+      title: "Local nginx is below the 14 October 2026 security release",
+      summary: `nginx ${nginx} is inside the range fixed by 1.31.7 on the mainline and 1.30.6 on the 1.30 line.`,
+      why: "Those releases fix five medium worker issues, including a buffer overflow, HTTP/3 request-body injection, and TLS session-ticket forgery. This is a report about the machine running vigil doctor. It does not probe a remote server and it does not block a deploy.",
+      remediation: [nginxAdvisory.remediation],
+      recommendationOnly: true,
+      category: "toolchain",
+      file: "(local)",
+      evidence: nginx,
+    }));
+  }
   const go = input.goVersion ? versionToken(input.goVersion) : undefined;
   if (go && goMissingTrustFix(go)) {
     findings.push(netFinding({
@@ -76,14 +92,16 @@ export function assessToolchain(input: {
     const tag = versionToken(image.tag) ?? image.tag;
     const curlImage = /curl/i.test(image.image) && tag && curlAffected(tag);
     const goImage = /golang|^go(?::|\/)/i.test(image.image) && tag && goMissingTrustFix(tag);
-    if (curlImage || goImage) {
+    const nginxImage = isNginxImage(image.image) && tag && nginxMissingSecurityRelease(tag);
+    if (curlImage || goImage || nginxImage) {
+      const kind = curlImage ? "curl" : goImage ? "Go" : "nginx";
       findings.push(netFinding({
         id: "TOOLCHAIN_IMAGE",
         severity: "high",
         title: "Container base image is missing a toolchain fix",
-        summary: `${image.image} matches a curl or Go advisory range.`,
+        summary: `${image.image} matches a ${kind} advisory range.`,
         why: "Doctor reports the image. It does not build or run it.",
-        remediation: [curlImage ? curlAdvisory.remediation : goAdvisory.remediation],
+        remediation: [curlImage ? curlAdvisory.remediation : goImage ? goAdvisory.remediation : nginxAdvisory.remediation],
         recommendationOnly: true,
         category: "toolchain",
         file: image.source,
@@ -174,6 +192,12 @@ export function trustStoreFindings(bundles: TrustBundle[]): Finding[] {
     }));
   }
   return findings;
+}
+
+function isNginxImage(image: string): boolean {
+  const name = image.split("@")[0]?.split(":")[0] ?? "";
+  const last = name.split("/").pop()?.toLowerCase() ?? "";
+  return last === "nginx" || last === "nginx-unprivileged";
 }
 
 function isLinux(kernelOs: string | null | undefined): boolean {

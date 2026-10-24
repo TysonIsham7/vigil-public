@@ -5,6 +5,7 @@ import {
   evaluatePhp,
   goMissingTrustFix,
   isCompromisedLitellm,
+  nginxMissingSecurityRelease,
   nodeMissingSecurityRelease,
   litellmImage,
   phpVulnerable,
@@ -63,6 +64,18 @@ describe("advisories", () => {
     expect(nodeMissingSecurityRelease("25.0.0")).toBe(true);
     expect(nodeMissingSecurityRelease("20.19.0")).toBe(true);
     expect(nodeMissingSecurityRelease("27.0.0")).toBe(false);
+  });
+
+  it("flags nginx builds below the 14 October 2026 security release", () => {
+    expect(nginxMissingSecurityRelease("1.31.6")).toBe(true);
+    expect(nginxMissingSecurityRelease("nginx/1.31.7")).toBe(false);
+    expect(nginxMissingSecurityRelease("1.31.8")).toBe(false);
+    expect(nginxMissingSecurityRelease("1.30.5")).toBe(true);
+    expect(nginxMissingSecurityRelease("1.30.6")).toBe(false);
+    expect(nginxMissingSecurityRelease("1.29.4")).toBe(true);
+    expect(nginxMissingSecurityRelease("1.32.0")).toBe(false);
+    expect(nginxMissingSecurityRelease("0.1.28")).toBe(false);
+    expect(nginxMissingSecurityRelease("0.1.29")).toBe(true);
   });
 
   it("flags Go builds that are missing the eMudhra trust filter", () => {

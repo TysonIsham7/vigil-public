@@ -43,7 +43,14 @@ export interface CliDeps {
   scanUrl?: typeof scanUrl;
   fetchImpl?: typeof fetch;
   cwd?: string;
-  versions?: { node?: string | null; curl?: string | null; go?: string | null; kernel?: string | null; kernelOs?: string | null };
+  versions?: {
+    node?: string | null;
+    curl?: string | null;
+    go?: string | null;
+    nginx?: string | null;
+    kernel?: string | null;
+    kernelOs?: string | null;
+  };
   trustBundles?: TrustBundle[];
   readFiles?: (path: string) => { name: string; content: string }[];
   now?: Date;
@@ -225,6 +232,7 @@ async function doctorReport(flags: Flags, deps: CliDeps, now: Date): Promise<Rep
     node: process.version,
     curl: await commandOutput("curl", ["--version"]),
     go: await commandOutput("go", ["version"]),
+    nginx: await nginxVersion(),
     kernel: await commandOutput("uname", ["-r"]),
     kernelOs: await commandOutput("uname", ["-s"]),
   };
@@ -239,6 +247,7 @@ async function doctorReport(flags: Flags, deps: CliDeps, now: Date): Promise<Rep
     nodeVersion: versions.node,
     curlVersion: versions.curl,
     goVersion: versions.go,
+    nginxVersion: versions.nginx,
     kernelRelease: versions.kernel,
     kernelOs: versions.kernelOs,
     trustBundles,
@@ -261,6 +270,20 @@ async function commandOutput(bin: string, args: string[]): Promise<string | null
     return stdout;
   } catch {
     return null;
+  }
+}
+
+/** `nginx -v` writes the version to stderr and exits 0. A missing binary is skipped. */
+async function nginxVersion(): Promise<string | null> {
+  try {
+    const { stdout, stderr } = await execFileAsync("nginx", ["-v"], { timeout: 4000 });
+    const text = `${stdout}\n${stderr}`;
+    return text.includes("nginx/") ? text : null;
+  } catch (error) {
+    const stdout = typeof error === "object" && error && "stdout" in error ? String((error as { stdout?: unknown }).stdout ?? "") : "";
+    const stderr = typeof error === "object" && error && "stderr" in error ? String((error as { stderr?: unknown }).stderr ?? "") : "";
+    const text = `${stdout}\n${stderr}`;
+    return text.includes("nginx/") ? text : null;
   }
 }
 
