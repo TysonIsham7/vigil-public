@@ -20,7 +20,7 @@ The Chrome extension and the command-line helper run today. macOS Safari and iOS
 - Lookalike and homoglyph names, mixed-script labels, and a login form on a domain younger than seven days.
 - A page that discloses a PHP version below 8.2.35, 8.3.36, 8.4.27, or 8.5.12. The owner's scan blocks. A visitor scan warns. The finding says to upgrade PHP. `session.upload_progress.enabled=0` is only a partial mitigation.
 - An exact LiteLLM 1.107.0 pin in a lockfile or Dockerfile.
-- On `vigil doctor`: a local Node below 22.23.4, 24.22.1, or 26.12.1 on that release line, an affected curl or Go, a local kernel in the PwnEscape range, and a trust store that still contains a distrusted eMudhra key. Doctor does not block a deploy.
+- On `vigil doctor`: a local Node below 22.23.4, 24.22.1, or 26.12.1 on that release line, an affected curl or Go, a local nginx below 1.31.7 on the mainline or 1.30.6 on the 1.30 line, a local kernel in the PwnEscape range, and a trust store that still contains a distrusted eMudhra key. Doctor does not block a deploy.
 
 Missing security headers and the shared-host kernel note stay in the popup. They do not hold the page in High Security Mode.
 
@@ -32,7 +32,7 @@ When a server itself is compromised, its certificate can still pass Vigil's chec
 
 These are the same kind of gap. Vigil does not close them:
 
-- **Server-side breaches and patches.** Railway's 21 October 2026 environment-variable disclosure, and Vercel's April 2026 bulletin (closed 16 October 2026), live in a platform dashboard. A clean source tree does not show or rotate those secrets. Vigil also does not patch PHP, GitLab, nginx, or OpenSSL on a server, and it does not see a QUIC or HTTP/3 stack. The helper speaks HTTP/1.1. A visitor warning is not a patch. A PHP page that hides its version is only a suspicion.
+- **Server-side breaches and patches.** Railway's 21 October 2026 environment-variable disclosure, and Vercel's April 2026 bulletin (closed 16 October 2026), live in a platform dashboard. A clean source tree does not show or rotate those secrets. Vigil also does not patch PHP, GitLab, nginx, or OpenSSL on a server, and it does not see a QUIC or HTTP/3 stack. The helper speaks HTTP/1.1. A visitor warning is not a patch. A PHP page that hides its version is only a suspicion. A site scan does not read the server's nginx version. `vigil doctor` only reports a local `nginx -v` and a Dockerfile tag.
 - **Device-code phishing.** A real identity-provider page can ask for a device code and approve a session for someone else. The certificate is valid. Vigil does not see that approval. Do not enter a device code you did not start.
 - **ClickFix.** A page can tell a person to paste a command into a terminal or the Run dialog. Vigil does not run page script, and it does not stop that paste. A credential form that appears only after JavaScript or a CAPTCHA is not visible to the fetch.
 - **Chrome Certificate Transparency.** Vigil counts embedded SCT bytes. It does not check SCT signatures, log operators, or Chrome's per-root cutoffs, and it does not copy every Chrome root-store removal that another store still trusts. The distrust file is a snapshot. Vigil does not consume CRLSet, OneCRL, or CRLite. After Oct 27, 2026, re-check the emSign ECC Root CA - G3 removal before changing that file. See `docs/TODO.md`.
@@ -72,7 +72,7 @@ vigil install-native-host --extension-id <id>
 vigil uninstall-native-host
 ```
 
-`scan` of a URL is the site owner. `check-url` is a visitor. `deps` exits 2 on an exact LiteLLM 1.107.0 pin. `doctor` reads the running Node (`process.version`), local curl, Go, `uname -r`, and the ca-certificates, certifi, and Node trust stores. It exits 0 even when it reports a finding. Node should be 22.23.4 or newer on the 22 line, 24.22.1 or newer on the 24 line, or 26.12.1 or newer on the 26 line. Go's eMudhra filter is 1.27.3 or newer, or 1.26.10 on the 1.26 line.
+`scan` of a URL is the site owner. `check-url` is a visitor. `deps` exits 2 on an exact LiteLLM 1.107.0 pin. `doctor` reads the running Node (`process.version`), local curl, Go, `nginx -v`, `uname -r`, and the ca-certificates, certifi, and Node trust stores. It exits 0 even when it reports a finding. Node should be 22.23.4 or newer on the 22 line, 24.22.1 or newer on the 24 line, or 26.12.1 or newer on the 26 line. Go's eMudhra filter is 1.27.3 or newer, or 1.26.10 on the 1.26 line. nginx should be 1.31.7 or newer on the mainline, or 1.30.6 or newer on the 1.30 line.
 
 Exit 0 means the command finished and `block_deploy` is false. Exit 2 means `block_deploy`. Exit 1 is usage, SSRF, or a network failure. A critical finding blocks only when `recommendationOnly` is false.
 

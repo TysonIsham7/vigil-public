@@ -11,6 +11,8 @@ export {
   kernelRelease,
   litellmAdvisory,
   litellmImage,
+  nginxAdvisory,
+  nginxMissingSecurityRelease,
   nodeAdvisory,
   nodeMissingSecurityRelease,
   parsePhpVersion,

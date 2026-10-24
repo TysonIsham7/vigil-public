@@ -1,0 +1,24 @@
+{
+  "id": "NGINX-2026-10-14",
+  "cves": [
+    "CVE-2026-15176",
+    "CVE-2026-93479",
+    "CVE-2026-95101",
+    "CVE-2026-97629",
+    "CVE-2026-97205"
+  ],
+  "published": "2026-10-14",
+  "component": "nginx",
+  "summary": "nginx 1.31.7 and 1.30.6 fix five medium worker issues: an alias-and-rewrite buffer overflow, a script-evaluation buffer overflow, HTTP/3 request-body injection, TLS session-ticket forgery, and an AIO use-after-free.",
+  "introduced": "0.1.29",
+  "fixedLines": [
+    { "major": 1, "minor": 31, "patch": 7 },
+    { "major": 1, "minor": 30, "patch": 6 }
+  ],
+  "remediation": "Upgrade nginx to 1.31.7 or newer on the mainline, or to 1.30.6 or newer on the 1.30 stable line.",
+  "sources": [
+    "https://nginx.org/en/security_advisories.html",
+    "https://nginx.org/en/CHANGES",
+    "https://nginx.org/en/CHANGES-1.30"
+  ]
+}

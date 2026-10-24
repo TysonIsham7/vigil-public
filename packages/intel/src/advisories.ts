@@ -2,10 +2,11 @@ import curlAdvisory from "../advisories/curl-cve-2026-92392.json" with { type: "
 import goAdvisory from "../advisories/go-1.27.3-emudhra.json" with { type: "json" };
 import kernelAdvisory from "../advisories/kernel-cve-2026-99999.json" with { type: "json" };
 import litellmAdvisory from "../advisories/litellm-1.107.0.json" with { type: "json" };
+import nginxAdvisory from "../advisories/nginx-2026-10-14.json" with { type: "json" };
 import nodeAdvisory from "../advisories/node-2026-10-21.json" with { type: "json" };
 import phpAdvisory from "../advisories/php-cve-2026-109618.json" with { type: "json" };
 
-export { curlAdvisory, goAdvisory, kernelAdvisory, litellmAdvisory, nodeAdvisory, phpAdvisory };
+export { curlAdvisory, goAdvisory, kernelAdvisory, litellmAdvisory, nginxAdvisory, nodeAdvisory, phpAdvisory };
 
 export function parseVersion(input: string): number[] | null {
   const match = /(\d+)\.(\d+)\.(\d+)/.exec(input);
@@ -120,6 +121,23 @@ export function nodeMissingSecurityRelease(version: string): boolean {
   if (line) return cmpVersion(parsed, [line.major, line.minor, line.patch]) < 0;
   const newest = nodeAdvisory.fixedLines.reduce((best, item) => (item.major > best.major ? item : best));
   return parsed[0] < newest.major;
+}
+
+/**
+ * True for a build inside the 14 October 2026 nginx range.
+ * 1.31.7+ and the 1.30.6+ stable line are the fixed releases. Newer majors are left alone.
+ */
+export function nginxMissingSecurityRelease(version: string): boolean {
+  const parsed = parseVersion(version);
+  if (!parsed) return false;
+  const [major, minor, patch] = parsed;
+  const line = nginxAdvisory.fixedLines.find((item) => item.major === major && item.minor === minor);
+  if (line) return patch < line.patch;
+  const mainline = nginxAdvisory.fixedLines.find((item) => item.major === 1 && item.minor === 31);
+  if (mainline && cmpVersion(parsed, [mainline.major, mainline.minor, mainline.patch]) >= 0) return false;
+  const introduced = parseVersion(nginxAdvisory.introduced);
+  if (introduced && cmpVersion(parsed, introduced) < 0) return false;
+  return major === 0 || major === 1;
 }
 
 export function goMissingTrustFix(version: string): boolean {
