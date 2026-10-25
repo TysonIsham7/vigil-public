@@ -4,8 +4,9 @@ import kernelAdvisory from "../advisories/kernel-cve-2026-99999.json" with { typ
 import litellmAdvisory from "../advisories/litellm-1.107.0.json" with { type: "json" };
 import nodeAdvisory from "../advisories/node-2026-10-21.json" with { type: "json" };
 import phpAdvisory from "../advisories/php-cve-2026-109618.json" with { type: "json" };
+import pipAdvisory from "../advisories/pip-26.2.2-emudhra.json" with { type: "json" };
 
-export { curlAdvisory, goAdvisory, kernelAdvisory, litellmAdvisory, nodeAdvisory, phpAdvisory };
+export { curlAdvisory, goAdvisory, kernelAdvisory, litellmAdvisory, nodeAdvisory, phpAdvisory, pipAdvisory };
 
 export function parseVersion(input: string): number[] | null {
   const match = /(\d+)\.(\d+)\.(\d+)/.exec(input);
@@ -120,6 +121,23 @@ export function nodeMissingSecurityRelease(version: string): boolean {
   if (line) return cmpVersion(parsed, [line.major, line.minor, line.patch]) < 0;
   const newest = nodeAdvisory.fixedLines.reduce((best, item) => (item.major > best.major ? item : best));
   return parsed[0] < newest.major;
+}
+
+/** True when pip still vendors a certifi from before the eMudhra removal. */
+export function pipMissingCertifiFix(version: string): boolean {
+  return belowFixed(version, pipAdvisory.pipFixed);
+}
+
+/** True when uv is older than the release that picked up certifi 2026.10.19. */
+export function uvMissingCertifiFix(version: string): boolean {
+  return belowFixed(version, pipAdvisory.uvFixed);
+}
+
+function belowFixed(version: string, fixed: string): boolean {
+  const parsed = parseVersion(version.replace(/^[a-z]+/i, ""));
+  const floor = parseVersion(fixed);
+  if (!parsed || !floor) return false;
+  return cmpVersion(parsed, floor) < 0;
 }
 
 export function goMissingTrustFix(version: string): boolean {

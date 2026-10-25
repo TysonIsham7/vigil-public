@@ -18,6 +18,9 @@ export {
   phpAdvisory,
   phpDetected,
   phpVulnerable,
+  pipAdvisory,
+  pipMissingCertifiFix,
+  uvMissingCertifiFix,
   wordpressReadmeVersion,
   wordpressSignals,
 } from "./advisories.js";

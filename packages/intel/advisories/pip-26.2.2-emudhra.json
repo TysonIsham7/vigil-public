@@ -1,0 +1,13 @@
+{
+  "id": "PIP-26.2.2-EMUDHRA",
+  "published": "2026-10-22",
+  "component": "pip",
+  "summary": "pip before 26.2.2 vendors a certifi bundle that still trusts the compromised eMudhra intermediates. uv before 0.13.4 is the same gap. Updating the OS trust store does not replace those copies.",
+  "pipFixed": "26.2.2",
+  "uvFixed": "0.13.4",
+  "certifiFixed": "2026.10.19",
+  "remediation": "Upgrade pip to 26.2.2 or newer. If uv is installed, upgrade it to 0.13.4 or newer.",
+  "sources": [
+    "https://www.openwall.com/lists/oss-security/2026/10/22/28"
+  ]
+}

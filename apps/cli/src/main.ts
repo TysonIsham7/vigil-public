@@ -43,7 +43,7 @@ export interface CliDeps {
   scanUrl?: typeof scanUrl;
   fetchImpl?: typeof fetch;
   cwd?: string;
-  versions?: { node?: string | null; curl?: string | null; go?: string | null; kernel?: string | null; kernelOs?: string | null };
+  versions?: { node?: string | null; curl?: string | null; go?: string | null; pip?: string | null; uv?: string | null; kernel?: string | null; kernelOs?: string | null };
   trustBundles?: TrustBundle[];
   readFiles?: (path: string) => { name: string; content: string }[];
   now?: Date;
@@ -65,7 +65,7 @@ const HELP = `vigil ${VERSION}
   vigil uninstall-native-host
 
 scan reads files or scans a URL as the site owner. check-url scans a URL as a visitor.
-deps reads lockfiles and Dockerfiles. doctor reports the local Node, curl, Go, kernel (uname), and trust stores.
+deps reads lockfiles and Dockerfiles. doctor reports the local Node, curl, Go, pip, uv, kernel (uname), and trust stores.
 serve listens on 127.0.0.1 for the extension helper. It returns verdict signals for one hostname and stores no page content.
 native-host speaks Chrome's stdio native-messaging protocol and returns that same verdict. It does not log.
 install-native-host writes a user-level Chrome host manifest for one extension id. No sudo.
@@ -225,6 +225,8 @@ async function doctorReport(flags: Flags, deps: CliDeps, now: Date): Promise<Rep
     node: process.version,
     curl: await commandOutput("curl", ["--version"]),
     go: await commandOutput("go", ["version"]),
+    pip: await commandOutput("pip", ["--version"]) ?? await commandOutput("pip3", ["--version"]),
+    uv: await commandOutput("uv", ["--version"]),
     kernel: await commandOutput("uname", ["-r"]),
     kernelOs: await commandOutput("uname", ["-s"]),
   };
@@ -239,6 +241,8 @@ async function doctorReport(flags: Flags, deps: CliDeps, now: Date): Promise<Rep
     nodeVersion: versions.node,
     curlVersion: versions.curl,
     goVersion: versions.go,
+    pipVersion: versions.pip,
+    uvVersion: versions.uv,
     kernelRelease: versions.kernel,
     kernelOs: versions.kernelOs,
     trustBundles,

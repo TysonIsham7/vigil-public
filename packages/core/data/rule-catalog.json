@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.21.2",
+  "version": "2026.10.25.1",
   "frameworks": {
     "nistCsf": "2.0",
     "cis": "8.1"
@@ -112,6 +112,8 @@
     "TOOLCHAIN_NODE": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
     "TOOLCHAIN_CURL": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
     "TOOLCHAIN_GO": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
+    "TOOLCHAIN_PIP": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
+    "TOOLCHAIN_UV": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
     "TOOLCHAIN_IMAGE": { "domain": "cloud-hybrid", "nist": "ID.RA", "cis": { "control": 7, "safeguard": "7.4", "safeguardTitle": "Perform Automated Application Patch Management" } },
     "KERNEL_CVE_2026_99999": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 7, "safeguard": "7.3", "safeguardTitle": "Perform Automated Operating System Patch Management" } },
     "KERNEL_SHARED_HOST": { "domain": "cloud-hybrid", "nist": "ID.RA", "cis": null },

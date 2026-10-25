@@ -112,6 +112,12 @@ describe("doctor toolchain", () => {
     expect(JSON.stringify(trust)).not.toContain("BEGIN CERTIFICATE");
     expect(findings.some((finding) => finding.id === "TOOLCHAIN_GO")).toBe(false);
     expect(assessToolchain({ kernelRelease: "6.12.113", kernelOs: "Linux" }).some((finding) => finding.id === "KERNEL_CVE_2026_99999")).toBe(false);
+    const oldPip = assessToolchain({ pipVersion: "pip 24.0 from /usr/lib/python3/dist-packages/pip (python 3.12)", uvVersion: "uv 0.13.3" });
+    expect(oldPip.find((finding) => finding.id === "TOOLCHAIN_PIP")).toMatchObject({ recommendationOnly: true, evidence: "24.0.0" });
+    expect(oldPip.find((finding) => finding.id === "TOOLCHAIN_UV")).toMatchObject({ recommendationOnly: true, evidence: "0.13.3" });
+    expect(JSON.stringify(oldPip)).not.toContain("/usr/lib");
+    const currentPip = assessToolchain({ pipVersion: "pip 26.2.2 from /opt/pip", uvVersion: "uv 0.13.4" });
+    expect(currentPip.some((finding) => finding.id === "TOOLCHAIN_PIP" || finding.id === "TOOLCHAIN_UV")).toBe(false);
     expect(assessToolchain({ kernelRelease: "24.6.0", kernelOs: "Darwin" }).some((finding) => finding.id === "KERNEL_CVE_2026_99999")).toBe(false);
     expect(trustStoreFindings([{ label: "certifi", pem: "" }])).toEqual([]);
     expect(kernelFinding("7.2.11")).toBeUndefined();

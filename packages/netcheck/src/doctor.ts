@@ -1,4 +1,4 @@
-import { assessKernel, curlAdvisory, curlAffected, goAdvisory, goMissingTrustFix, kernelAdvisory, litellmAdvisory, nodeAdvisory, nodeMissingSecurityRelease } from "@vigil/intel";
+import { assessKernel, curlAdvisory, curlAffected, goAdvisory, goMissingTrustFix, kernelAdvisory, litellmAdvisory, nodeAdvisory, nodeMissingSecurityRelease, pipAdvisory, pipMissingCertifiFix, uvMissingCertifiFix } from "@vigil/intel";
 import type { Finding } from "@vigil/core";
 import { parseDockerImages, type ImageRef } from "./deps.js";
 import { netFinding } from "./finding.js";
@@ -14,6 +14,8 @@ export function assessToolchain(input: {
   nodeVersion?: string | null;
   curlVersion?: string | null;
   goVersion?: string | null;
+  pipVersion?: string | null;
+  uvVersion?: string | null;
   kernelRelease?: string | null;
   kernelOs?: string | null;
   trustBundles?: TrustBundle[];
@@ -65,6 +67,36 @@ export function assessToolchain(input: {
       category: "toolchain",
       file: "(local)",
       evidence: go,
+    }));
+  }
+  const pip = input.pipVersion ? versionToken(input.pipVersion) : undefined;
+  if (pip && pipMissingCertifiFix(pip)) {
+    findings.push(netFinding({
+      id: "TOOLCHAIN_PIP",
+      severity: "high",
+      title: "Local pip still vendors a pre-eMudhra certifi",
+      summary: `pip ${pip} is older than ${pipAdvisory.pipFixed}. It keeps trusting the compromised intermediates from its own certifi copy.`,
+      why: "pip loads that vendored bundle in addition to the system trust store. Removing the keys from ca-certificates does not update it. This is a report about the machine running vigil doctor. It does not block a deploy.",
+      remediation: [pipAdvisory.remediation],
+      recommendationOnly: true,
+      category: "toolchain",
+      file: "(local)",
+      evidence: pip,
+    }));
+  }
+  const uv = input.uvVersion ? versionToken(input.uvVersion) : undefined;
+  if (uv && uvMissingCertifiFix(uv)) {
+    findings.push(netFinding({
+      id: "TOOLCHAIN_UV",
+      severity: "high",
+      title: "Local uv is below the eMudhra certifi update",
+      summary: `uv ${uv} is older than ${pipAdvisory.uvFixed}.`,
+      why: "That release is the one that picked up certifi 2026.10.19. This is a report about the machine running vigil doctor. It does not block a deploy.",
+      remediation: [pipAdvisory.remediation],
+      recommendationOnly: true,
+      category: "toolchain",
+      file: "(local)",
+      evidence: uv,
     }));
   }
   if (input.kernelRelease && isLinux(input.kernelOs)) {
@@ -162,7 +194,7 @@ export function trustStoreFindings(bundles: TrustBundle[]): Finding[] {
       severity: "high",
       title: `${bundle.label} still trusts an eMudhra key`,
       summary: `${bundle.label} contains ${hits.map((hit) => hit.name).join(", ")}.`,
-      why: "These are the compromised eMudhra intermediates or emSign ECC Root CA - G3. Clients that use this store can still accept a certificate those keys sign. Record-only roots are not reported. Go applies its own filter only in 1.27.3 or newer, and in 1.26.10 or newer on the 1.26 line. ca-certificates, certifi, and Node do not get that filter from a Go upgrade.",
+      why: "These are the compromised eMudhra intermediates or emSign ECC Root CA - G3. Clients that use this store can still accept a certificate those keys sign. Record-only roots are not reported. Go applies its own filter only in 1.27.3 or newer, and in 1.26.10 or newer on the 1.26 line. ca-certificates, certifi, and Node do not get that filter from a Go upgrade. This read does not see the certifi copy vendored inside an older pip.",
       remediation: [
         "Update this trust store so the distrusted keys are gone.",
         goAdvisory.remediation,

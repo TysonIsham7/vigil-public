@@ -6,6 +6,8 @@ import {
   goMissingTrustFix,
   isCompromisedLitellm,
   nodeMissingSecurityRelease,
+  pipMissingCertifiFix,
+  uvMissingCertifiFix,
   litellmImage,
   phpVulnerable,
 } from "../src/index.js";
@@ -63,6 +65,17 @@ describe("advisories", () => {
     expect(nodeMissingSecurityRelease("25.0.0")).toBe(true);
     expect(nodeMissingSecurityRelease("20.19.0")).toBe(true);
     expect(nodeMissingSecurityRelease("27.0.0")).toBe(false);
+  });
+
+  it("flags pip and uv from before the eMudhra certifi update", () => {
+    expect(pipMissingCertifiFix("26.2.1")).toBe(true);
+    expect(pipMissingCertifiFix("24.0.0")).toBe(true);
+    expect(pipMissingCertifiFix("26.2.2")).toBe(false);
+    expect(pipMissingCertifiFix("26.3.0")).toBe(false);
+    expect(uvMissingCertifiFix("0.13.3")).toBe(true);
+    expect(uvMissingCertifiFix("0.12.0")).toBe(true);
+    expect(uvMissingCertifiFix("0.13.4")).toBe(false);
+    expect(uvMissingCertifiFix("0.14.0")).toBe(false);
   });
 
   it("flags Go builds that are missing the eMudhra trust filter", () => {
