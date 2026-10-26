@@ -1,5 +1,5 @@
 import { NAV_BUDGET_MS, UrlRejected, headerFindings, inspectUrl, tlsRecommendation, type GateSignal } from "@vigil/core";
-import { INTEL_VERSION, assessSite, evaluatePhp, wordpressSignals } from "@vigil/intel";
+import { INTEL_VERSION, assessSite, classifyPhpExposure, evaluatePhp, phpSessionProgressNote, wordpressSignals } from "@vigil/intel";
 import { anchorSpkiHashes, readMozillaPem } from "./bundle.js";
 import {
   connectCertificateChain,
@@ -111,49 +111,60 @@ function assemble(
   page: PageSnapshot | null,
   age: number | null,
 ): HostVerdict {
-  let body = "";
-  let headers: Record<string, string> = {};
-  let setCookies: string[] = [];
-  try {
-    if (page) {
-      body = page.body;
-      headers = page.headers;
-      setCookies = page.setCookies;
-    }
-    const host = target.hostname;
-    const php = evaluatePhp({ headers, url: target.toString(), body, setCookies, audience: "visitor" });
-    const wp = wordpressSignals(body);
-    const site = assessSite({ host, ageDays: age, html: body, pageUrl: target.toString() });
-    const headerSignals = page ? headerFindings(target.toString(), page.headerMap).findings.map(findingToSignal) : [];
-    const signals = [...certSignals, ...headerSignals, ...site.signals.map(toSignal)];
-    if (php.status === "vulnerable" || php.status === "suspected") {
-      signals.push({
-        id: "PHP_CVE_2026_109618",
-        severity: php.severity === "informational" ? "high" : php.severity,
-        recommendationOnly: php.recommendationOnly,
-        title: php.status === "vulnerable" ? "Upgrade PHP" : "PHP detected without a version",
-        summary: php.version
-          ? `Upgrade PHP. PHP ${php.version} is below the fixed release. session.upload_progress.enabled=0 is only a partial mitigation for one path of CVE-2026-109619.`
-          : "The response looks like PHP, but no PHP/x.y.z version was disclosed. Upgrade PHP if this server runs it.",
-        confidence: php.version ? "high" : "medium",
-      });
-    }
-    if (wp.present) {
-      signals.push({
-        id: "WP_FINGERPRINT",
-        severity: "medium",
-        recommendationOnly: true,
-        title: "WordPress fingerprint",
-        summary: wp.version ? `WordPress ${wp.version} is mentioned in public HTML.` : "The public HTML mentions WordPress.",
-        confidence: "medium",
-      });
-    }
-    return { host, intelVersion: INTEL_VERSION, coverage: "full", signals: dedupe(signals) };
-  } finally {
-    body = "";
-    headers = {};
-    setCookies = [];
+  const body = page?.body ?? "";
+  const headers = page?.headers ?? {};
+  const setCookies = page?.setCookies ?? [];
+  const host = target.hostname;
+  const php = evaluatePhp({ headers, url: target.toString(), body, setCookies, audience: "visitor" });
+  const wp = wordpressSignals(body);
+  const site = assessSite({ host, ageDays: age, html: body, pageUrl: target.toString() });
+  const headerSignals = page ? headerFindings(target.toString(), page.headerMap).findings.map(findingToSignal) : [];
+  const signals = [...certSignals, ...headerSignals, ...site.signals.map(toSignal)];
+  if (page) {
+    const exposure = classifyPhpExposure(headers);
+    signals.push({
+      id: "PHP2SHELL_EXPOSURE",
+      severity: exposure.severity,
+      recommendationOnly: true,
+      title: exposure.title,
+      summary: exposure.summary,
+      confidence: exposure.confidence,
+    });
   }
+  if (php.status === "vulnerable" || php.status === "suspected") {
+    signals.push({
+      id: "PHP_CVE_2026_109618",
+      severity: php.severity === "informational" ? "high" : php.severity,
+      recommendationOnly: php.recommendationOnly,
+      title: php.status === "vulnerable" ? "Upgrade PHP" : "PHP detected without a version",
+      summary: php.version
+        ? `Upgrade PHP. PHP ${php.version} is below the fixed release. session.upload_progress.enabled=0 is only a partial mitigation for one path of CVE-2026-109619. CVE-2026-115560 still has no patched release.`
+        : "The response looks like PHP, but no PHP/x.y.z version was disclosed. Upgrade PHP if this server runs it. CVE-2026-115560 still has no patched release.",
+      confidence: php.version ? "high" : "medium",
+    });
+  }
+  if (php.status === "fixed") {
+    const note = phpSessionProgressNote(php.version);
+    signals.push({
+      id: note.id,
+      severity: "informational",
+      recommendationOnly: true,
+      title: note.title,
+      summary: note.summary,
+      confidence: "medium",
+    });
+  }
+  if (wp.present) {
+    signals.push({
+      id: "WP_FINGERPRINT",
+      severity: "medium",
+      recommendationOnly: true,
+      title: "WordPress fingerprint",
+      summary: wp.version ? `WordPress ${wp.version} is mentioned in public HTML.` : "The public HTML mentions WordPress.",
+      confidence: "medium",
+    });
+  }
+  return { host, intelVersion: INTEL_VERSION, coverage: "full", signals: dedupe(signals) };
 }
 
 async function certSignalsFor(

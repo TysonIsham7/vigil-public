@@ -7,5 +7,5 @@
     "apps/*/test/**/*.test.ts",
     "vitest.config.ts"
   ],
-  "exclude": ["apps/extension/src/**/*.ts"]
+  "exclude": ["apps/extension/src/**/*.ts", "apps/extension/test/guard-hooks.test.ts"]
 }

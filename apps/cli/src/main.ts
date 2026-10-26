@@ -10,28 +10,39 @@ import {
   dependencyFindings,
   imagesFromDockerfiles,
   parseDependencies,
+  checkBackend,
   queryOsv,
   runNativeHost,
   scanUrl,
   startVerdictServer,
+  type AddressLookup,
+  type BackendHandshake,
+  type BackendTransport,
   type ScanUrlOptions,
   type TrustBundle,
 } from "@vigil/netcheck";
 import { collectFiles, collectLockfiles } from "./files.js";
+import { runGate } from "./gate.js";
 import { formatHuman } from "./format.js";
 import { CHROME_NATIVE_HOST_NAME, installNativeHost, uninstallNativeHost } from "./native-install.js";
+import { startAgentGuard } from "./agent-guard/proxy.js";
+import { formatTrustAudit, runTrustAudit, trustAuditFindings, type TrustAuditReport } from "./trust-audit.js";
 
 const execFileAsync = promisify(execFile);
 const VERSION = "2.0.0";
 const COMMANDS = new Set([
   "scan",
+  "gate",
   "check-url",
+  "check-backend",
   "deps",
   "doctor",
+  "trust-audit",
   "serve",
   "native-host",
   "install-native-host",
   "uninstall-native-host",
+  "agent-guard",
 ]);
 
 export interface CliIo {
@@ -42,34 +53,93 @@ export interface CliIo {
 export interface CliDeps {
   scanUrl?: typeof scanUrl;
   fetchImpl?: typeof fetch;
+  lookup?: AddressLookup;
   cwd?: string;
-  versions?: { node?: string | null; curl?: string | null; go?: string | null; kernel?: string | null; kernelOs?: string | null };
+  versions?: {
+    node?: string | null;
+    curl?: string | null;
+    go?: string | null;
+    nginx?: string | null;
+    pip?: string | null;
+    uv?: string | null;
+    kernel?: string | null;
+    kernelOs?: string | null;
+  };
   trustBundles?: TrustBundle[];
   readFiles?: (path: string) => { name: string; content: string }[];
   now?: Date;
   nativeHost?: typeof runNativeHost;
   installNativeHost?: typeof installNativeHost;
   uninstallNativeHost?: typeof uninstallNativeHost;
+  trustAudit?: TrustAuditReport;
+  runTrustAudit?: () => Promise<TrustAuditReport>;
+  checkBackend?: typeof checkBackend;
+  backendTransport?: BackendTransport;
+  backendHandshake?: BackendHandshake;
 }
 
 const HELP = `vigil ${VERSION}
 
   vigil scan <path|url> [--json] [--prompt [text]] [--hosting vercel|netlify|cloudflare]
                         [--allow-host name] [--sample] [--ct]
+  vigil gate <npm:name@version|path.tgz|package-dir> [--json]
   vigil check-url <url> [same flags]
+  vigil check-backend <url> [--json]
   vigil deps [path] [--json]
   vigil doctor [path] [--json]
+  vigil trust-audit [--json]
   vigil serve [--port 8787]
   vigil native-host
   vigil install-native-host --extension-id <id>
   vigil uninstall-native-host
+  vigil agent-guard [--port 0] [--mode tunnel|intercept] [--identifiers file] [--allowlist file]
+                    [--proxy-token token] [--ipv6]
+
+check-backend is a passive fingerprint of backend exposure on a site you open as a visitor.
+It reads response headers, one browser-style TLS handshake, TLS 1.0 and TLS 1.1
+support handshakes, time until response headers,
+one GET for a missing page, and GET requests for a short list of known paths
+(/.git/HEAD, /server-status, /phpinfo.php, and a few others).
+It sends no request body, no crash payload, no oversized header, and no exploit.
+Active probing of a host you do not own may breach that host's terms of service
+or computer-misuse law. Run it only on hosts you are allowed to test.
+PHP versions are read from headers and compared with 8.5.12, 8.4.27, 8.3.36,
+and 8.2.35. PHP 5-7 is never patched. PHP with no version is unknown.
+A fingerprint does not set block_deploy. An existing critical certificate
+failure still can, including when the first GET fails the certificate check.
+Exit 0 when block_deploy is false. Exit 2 when it is set.
+Exit 1 is usage, SSRF, or a network error.
+Details: docs/CHECK-BACKEND.md.
+
+gate reads an npm package without installing it. Pass npm:name@version, a .tgz path, or an unpacked package directory.
+It follows bin, main, and exports, including files under dist, and it reads registry lifecycle scripts.
+It does not run npm, npx, or those scripts. A registry tarball is fetched with the guarded client and checked against the registry integrity hash before it is unpacked.
+prepare is reported and is not treated as a registry install script.
+Exit 0 when that graph was read and nothing blocking was found.
+Exit 2 when install behavior is blocking, a graph file was not read, a require or import is computed, or the gate file budget is hit.
+Exit 1 is usage, a network error, or a registry integrity mismatch.
+scan is unchanged: it still skips dist and still uses the 40-file source cap. gate uses its own walker and budget.
 
 scan reads files or scans a URL as the site owner. check-url scans a URL as a visitor.
-deps reads lockfiles and Dockerfiles. doctor reports the local Node, curl, Go, kernel (uname), and trust stores.
+check-url and an owner URL scan flag AGENT_DIRECTED_REQUEST when a page addresses an agent and asks for identity, a credential, or a behavior change. That finding is recommendationOnly. It does not hold the page and it does not block a deploy. It is not the outbound guard.
+deps reads lockfiles and Dockerfiles. doctor reports the local Node, curl, Go, nginx, pip, uv, kernel (uname), trust stores, and trust-audit.
+trust-audit probes local TLS clients against known-bad test hosts and prints advice. It does not change trust settings, shell profiles, or system files. A timeout is unknown. It does not mean the tool rejected the chain. Exit 0 when the audit finishes.
 serve listens on 127.0.0.1 for the extension helper. It returns verdict signals for one hostname and stores no page content.
 native-host speaks Chrome's stdio native-messaging protocol and returns that same verdict. It does not log.
 install-native-host writes a user-level Chrome host manifest for one extension id. No sudo.
 uninstall-native-host removes that manifest and its launcher.
+agent-guard is a separate loopback proxy. It does not read the page check and it does not upload the identifier list.
+Listen is 127.0.0.1 only, plus ::1 with --ipv6. Set both proxies to the printed URL, including the token:
+  HTTP_PROXY=http://<token>@127.0.0.1:<port>
+  HTTPS_PROXY=http://<token>@127.0.0.1:<port>
+  NO_PROXY=localhost,127.0.0.1,::1
+Do not put public hosts in NO_PROXY. Clients that omit the token are refused.
+The default mode is tunnel. Plain HTTP is inspected. Every CONNECT is refused, including an allowlisted host, because the payload is not visible. The shippable guard does not open a CONNECT tunnel without inspection. There is no local CA in tunnel mode. Intercept mode decrypts every CONNECT, then applies the same checks. An allowlisted Upgrade is rebuilt without hop-by-hop or proxy headers.
+curl can use those environment variables. --proxy is an alternative for one invocation. Do not pass --insecure. --cacert is only for intercept mode.
+Claude Code should be started with those variables. If Node fetch ignores them, also set NODE_USE_ENV_PROXY=1. Intercept mode sets NODE_EXTRA_CA_CERTS to the printed certificate path. A shell tool that clears the proxy variables is outside the guard.
+Cursor can set http.proxy to the same URL (include the token if the field accepts it), http.proxySupport to override, and http.noProxy to localhost,127.0.0.1,::1. Cursor's HTTPS calls need intercept mode. Intercept mode is a poor fit if the editor trusts only the operating system store.
+Do not install the local CA in the operating system trust store. Process-scoped variables are NODE_EXTRA_CA_CERTS, SSL_CERT_FILE, REQUESTS_CA_BUNDLE, and curl --cacert. A cloud agent needs its own guard and its own identity file. Do not copy a CA key to another machine.
+Allow means a matched identifier may be forwarded after inspection. Allowlist entries are exact hosts. The sample file docs/agent-guard.sample has placeholders only. See docs/AGENT-GUARD.md.
 Exit 0 when the scan finishes without block_deploy. Exit 2 when block_deploy is set.
 doctor exits 0 even when it reports findings. Exit 1 is a usage, SSRF, or network error.
 `;
@@ -90,12 +160,25 @@ export async function main(argv: string[], io: CliIo = consoleIo(), deps: CliDep
       io.stderr(HELP);
       return 1;
     }
+    if (command === "check-backend") return await backendCommand(flags, io, deps);
+    if (command === "gate") return await gateCommand(flags, io, deps);
+    if (command === "trust-audit" && flags.positionals.length > 1) throw new LimitError("trust-audit takes no path");
+    const trustAudit = command === "doctor" || command === "trust-audit" ? await loadTrustAudit(deps) : undefined;
+    if (command === "trust-audit") {
+      const audit = trustAudit ?? await loadTrustAudit(deps);
+      io.stdout(flags.json ? `${JSON.stringify(audit, null, 2)}\n` : `${formatTrustAudit(audit)}\n`);
+      return 0;
+    }
     if (command === "serve") return await serve(flags, io);
+    if (command === "agent-guard") return await agentGuard(flags, io);
     if (command === "native-host") return await nativeHost(deps);
     if (command === "install-native-host") return installCommand(flags, io, deps);
     if (command === "uninstall-native-host") return uninstallCommand(io, deps);
-    const report = await run(command, flags, deps);
-    io.stdout(flags.json ? `${JSON.stringify(report, null, 2)}\n` : `${formatHuman(report)}\n`);
+    const report = await run(command, flags, trustAudit ? { ...deps, trustAudit } : deps);
+    const human = command === "doctor" && trustAudit
+      ? `${formatHuman(report)}\n\n${formatTrustAudit(trustAudit)}`
+      : formatHuman(report);
+    io.stdout(flags.json ? `${JSON.stringify(report, null, 2)}\n` : `${human}\n`);
     if (command === "doctor") return 0;
     return report.blockDeploy ? 2 : 0;
   } catch (error) {
@@ -107,6 +190,43 @@ export async function main(argv: string[], io: CliIo = consoleIo(), deps: CliDep
     io.stderr(`${message}\n`);
     return 1;
   }
+}
+
+async function agentGuard(flags: Flags, io: CliIo): Promise<number> {
+  const dir = flags.configDir;
+  const guard = await startAgentGuard({
+    ...(flags.port !== undefined ? { port: flags.port } : {}),
+    ...(flags.mode ? { mode: flags.mode } : {}),
+    ...(flags.proxyToken ? { token: flags.proxyToken } : {}),
+    ...(flags.ipv6 ? { ipv6: true } : {}),
+    ...(dir ? {
+      identifiersPath: join(dir, "identifiers"),
+      allowlistPath: join(dir, "allowlist"),
+      logPath: join(dir, "agent-guard.log"),
+      keyPath: join(dir, "identifiers.key"),
+      caCertPath: join(dir, "agent-guard-ca.pem"),
+      caKeyPath: join(dir, "agent-guard-ca.key"),
+    } : {}),
+    ...(flags.identifiers ? { identifiersPath: flags.identifiers } : {}),
+    ...(flags.allowlist ? { allowlistPath: flags.allowlist } : {}),
+    ...(flags.logPath ? { logPath: flags.logPath } : {}),
+  });
+  io.stdout(`vigil agent-guard listening on 127.0.0.1:${guard.port}\n`);
+  io.stdout(`proxy url ${guard.url}\n`);
+  io.stdout(`mode ${guard.mode}\n`);
+  io.stdout("Set HTTP_PROXY and HTTPS_PROXY to the proxy url.\n");
+  io.stdout("Set NO_PROXY=localhost,127.0.0.1,::1\n");
+  if (guard.certPath) io.stdout(`local ca certificate ${guard.certPath}\n`);
+  await new Promise<void>((resolve) => {
+    const stop = () => {
+      process.off("SIGINT", stop);
+      process.off("SIGTERM", stop);
+      void guard.close().finally(resolve);
+    };
+    process.on("SIGINT", stop);
+    process.on("SIGTERM", stop);
+  });
+  return 0;
 }
 
 async function serve(flags: Flags, io: CliIo): Promise<number> {
@@ -171,6 +291,34 @@ function uninstallCommand(io: CliIo, deps: CliDeps): number {
   }
 }
 
+async function gateCommand(flags: Flags, io: CliIo, deps: CliDeps): Promise<number> {
+  if (flags.positionals.length > 2) throw new LimitError("gate takes one package");
+  const target = flags.positionals[1];
+  if (!target) throw new LimitError("gate requires npm:name@version, a .tgz path, or a package directory");
+  const report = await runGate(target, {
+    ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
+    ...(deps.lookup ? { lookup: deps.lookup } : {}),
+    ...(deps.cwd ? { cwd: deps.cwd } : {}),
+    ...(deps.now ? { now: deps.now } : {}),
+  });
+  io.stdout(flags.json ? `${JSON.stringify(report, null, 2)}\n` : `${formatHuman(report)}\n`);
+  return report.blockDeploy ? 2 : 0;
+}
+
+async function backendCommand(flags: Flags, io: CliIo, deps: CliDeps): Promise<number> {
+  if (flags.positionals.length > 2) throw new LimitError("check-backend takes one URL");
+  const target = flags.positionals[1];
+  if (!target || !isUrl(target)) throw new UrlRejected("check-backend requires an http(s) URL");
+  const report = await (deps.checkBackend ?? checkBackend)(target, {
+    ...(deps.backendTransport ? { transport: deps.backendTransport } : {}),
+    ...(deps.backendHandshake ? { handshake: deps.backendHandshake } : {}),
+    ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
+    ...(deps.now ? { now: deps.now } : {}),
+  });
+  io.stdout(flags.json ? `${JSON.stringify(report, null, 2)}\n` : `${formatHuman(report)}\n`);
+  return report.blockDeploy ? 2 : 0;
+}
+
 async function run(command: string, flags: Flags, deps: CliDeps): Promise<Report> {
   const now = deps.now ?? new Date();
   if (command === "deps") return depsReport(flags, deps, now);
@@ -219,32 +367,47 @@ async function depsReport(flags: Flags, deps: CliDeps, now: Date): Promise<Repor
   });
 }
 
+async function loadTrustAudit(deps: CliDeps): Promise<TrustAuditReport> {
+  if (deps.trustAudit) return deps.trustAudit;
+  if (deps.runTrustAudit) return deps.runTrustAudit();
+  return runTrustAudit();
+}
+
 async function doctorReport(flags: Flags, deps: CliDeps, now: Date): Promise<Report> {
   const target = flags.positionals[1] ?? deps.cwd ?? process.cwd();
   const versions = deps.versions ?? {
     node: process.version,
     curl: await commandOutput("curl", ["--version"]),
     go: await commandOutput("go", ["version"]),
+    nginx: await nginxVersion(),
+    pip: await commandOutput("pip", ["--version"]) ?? await commandOutput("pip3", ["--version"]),
+    uv: await commandOutput("uv", ["--version"]),
     kernel: await commandOutput("uname", ["-r"]),
     kernelOs: await commandOutput("uname", ["-s"]),
   };
   const trustBundles = deps.trustBundles ?? (deps.versions ? [] : await collectTrustBundles());
-  let files: { name: string; content: string }[] = [];
+  let files: { name: string; content: string }[];
   try {
     files = (deps.readFiles ?? collectLockfiles)(target).filter((file) => /dockerfile/i.test(file.name));
   } catch {
     files = [];
   }
-  const findings = assessToolchain({
-    nodeVersion: versions.node,
-    curlVersion: versions.curl,
-    goVersion: versions.go,
-    kernelRelease: versions.kernel,
-    kernelOs: versions.kernelOs,
-    trustBundles,
-    images: imagesFromDockerfiles(files),
-    recommendationOnly: true,
-  });
+  const findings = [
+    ...assessToolchain({
+      nodeVersion: versions.node,
+      curlVersion: versions.curl,
+      goVersion: versions.go,
+      nginxVersion: versions.nginx,
+      pipVersion: versions.pip,
+      uvVersion: versions.uv,
+      kernelRelease: versions.kernel,
+      kernelOs: versions.kernelOs,
+      trustBundles,
+      images: imagesFromDockerfiles(files),
+      recommendationOnly: true,
+    }),
+    ...(deps.trustAudit ? trustAuditFindings(deps.trustAudit) : []),
+  ];
   return buildReport({
     findings,
     sourceType: "files",
@@ -264,6 +427,20 @@ async function commandOutput(bin: string, args: string[]): Promise<string | null
   }
 }
 
+/** `nginx -v` writes the version to stderr and exits 0. A missing binary is skipped. */
+async function nginxVersion(): Promise<string | null> {
+  try {
+    const { stdout, stderr } = await execFileAsync("nginx", ["-v"], { timeout: 4000 });
+    const text = `${stdout}\n${stderr}`;
+    return text.includes("nginx/") ? text : null;
+  } catch (error) {
+    const stdout = typeof error === "object" && error && "stdout" in error ? String((error as { stdout?: unknown }).stdout ?? "") : "";
+    const stderr = typeof error === "object" && error && "stderr" in error ? String((error as { stderr?: unknown }).stderr ?? "") : "";
+    const text = `${stdout}\n${stderr}`;
+    return text.includes("nginx/") ? text : null;
+  }
+}
+
 function sampleDir(): string {
   return join(dirname(fileURLToPath(import.meta.url)), "../../../fixtures/vulnerable");
 }
@@ -279,11 +456,27 @@ interface Flags {
   version: boolean;
   port?: number;
   extensionId?: string;
+  mode?: "tunnel" | "intercept";
+  identifiers?: string;
+  allowlist?: string;
+  logPath?: string;
+  proxyToken?: string;
+  ipv6: boolean;
+  configDir?: string;
   positionals: string[];
 }
 
 function parseArgs(argv: string[]): Flags {
-  const flags: Flags = { json: false, allowHost: [], sample: false, ct: false, help: false, version: false, positionals: [] };
+  const flags: Flags = {
+    json: false,
+    allowHost: [],
+    sample: false,
+    ct: false,
+    help: false,
+    version: false,
+    ipv6: false,
+    positionals: [],
+  };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i] ?? "";
     if (arg === "--json") flags.json = true;
@@ -317,7 +510,32 @@ function parseArgs(argv: string[]): Flags {
       const next = argv[++i];
       if (!next) throw new LimitError("--allow-host requires a hostname");
       flags.allowHost.push(next);
-    } else if (arg.startsWith("--")) throw new LimitError(`Unknown flag ${arg}`);
+    } else if (arg === "--mode") {
+      const next = argv[++i];
+      if (next !== "tunnel" && next !== "intercept") throw new LimitError("--mode must be tunnel or intercept");
+      flags.mode = next;
+    } else if (arg === "--identifiers") {
+      const next = argv[++i];
+      if (!next) throw new LimitError("--identifiers requires a path");
+      flags.identifiers = next;
+    } else if (arg === "--allowlist") {
+      const next = argv[++i];
+      if (!next) throw new LimitError("--allowlist requires a path");
+      flags.allowlist = next;
+    } else if (arg === "--log") {
+      const next = argv[++i];
+      if (!next) throw new LimitError("--log requires a path");
+      flags.logPath = next;
+    } else if (arg === "--proxy-token") {
+      const next = argv[++i];
+      if (!next) throw new LimitError("--proxy-token requires a value");
+      flags.proxyToken = next;
+    } else if (arg === "--config-dir") {
+      const next = argv[++i];
+      if (!next) throw new LimitError("--config-dir requires a path");
+      flags.configDir = next;
+    } else if (arg === "--ipv6") flags.ipv6 = true;
+    else if (arg.startsWith("--")) throw new LimitError(`Unknown flag ${arg}`);
     else flags.positionals.push(arg);
   }
   return flags;

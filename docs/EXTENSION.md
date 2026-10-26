@@ -49,7 +49,7 @@ High Security keeps the hold page up only for:
 - Fake-site signals: lookalike, similar name, mixed script, new domain, brand impersonation, IP literal, credential-form risk.
 - Confirmed advisories: PHP `CVE-2026-109618` when a version is present, and exact LiteLLM `1.107.0`.
 
-Missing headers, `KERNEL_SHARED_HOST`, SCT absence, expiring or SHA-1 certificates, suspicious TLDs, free-hosting suffixes, and a PHP fingerprint with no version stay in the popup. They do not keep the hold page up.
+Missing headers, `KERNEL_SHARED_HOST`, SCT absence, expiring or SHA-1 certificates, suspicious TLDs, free-hosting suffixes, a PHP fingerprint with no version, and `PHP_CVE_2026_115560` stay in the popup. They do not keep the hold page up. `PHP_CVE_2026_115560` is the 23 October 2026 PHP note: no fixed release exists yet, so a version that already has the 21 October fixes is not held.
 
 A check that does not finish within 2 seconds fails closed in High Security. The hold page says so and still offers an override. A missing native host, or a loopback helper that is not running (connection refused), falls back to the next check and does not send the tab back to the hold page on the next request. Saving the helper address again retries the loopback helper. A native host or loopback helper that accepts the connection and never answers stays held, and that timeout is not cached as an allow. A native port that disconnects or a host process that exits mid-check stays held with helper unavailable, including when the hostname itself looks clean. A helper response for a different host is treated as a failed check and stays held.
 
@@ -74,6 +74,20 @@ Normal mode never redirects. The badge is set again when the navigation commits,
 | Known-bad shortcut | While High Security is on, session rules redirect every http(s) main frame to `hold.html` and block subframes, except allowlisted, one-time, and cached allow/warn hosts. `about:`, `blob:`, and userinfo URLs are held from the navigation handler without waiting on storage. Safari may reject the rules. The handler still holds the page. | `highSecurityRules` and `applySessionRules` |
 | Remote code | Manifest CSP is `script-src 'self'`. No update URL, no external messaging, no telemetry. | manifest assertion in `gate.test.ts` |
 
-Permissions are `storage`, `webNavigation`, `tabs`, `declarativeNetRequest`, `nativeMessaging`, and `scripting`, plus `http` and `https` host access so High Security can see top-level navigations. The only always-on content script is an isolated relay. It listens for one event from the blank-window guard and does not read the page. The guard itself is a main-world script registered only while High Security is on. The native host and the loopback helper each fetch the public URL themselves and drop the body before they answer. The native host does not log the request.
+Permissions are unchanged. Each one is still required for the checks that already existed, and the page guards reuse them:
+
+| Permission | Why it is there |
+|---|---|
+| `storage` | Mode, helper, allowlist, cache, and the four guard toggles. Recovery phrases and clipboard payloads are not written here. |
+| `webNavigation` | High Security sees a top-level navigation in time to hold it. |
+| `tabs` | Read the active tab for the popup, and inject a guard into an already-open http(s) tab when that guard is turned on. |
+| `declarativeNetRequest` | High Security session rules. The page guards do not add rules. |
+| `nativeMessaging` | The native host returns the verdict, including the PHP2Shell class, from headers it already fetched. |
+| `scripting` | Register the blank-window script and the ClickFix, recovery-phrase, and wallet scripts in the page's main world. A page content-security policy would block a script tag, so this is the injection path. |
+| `http` and `https` host access | High Security and the guards only run on pages the extension could already see. There is no `clipboardRead`, `clipboardWrite`, or new host. |
+
+The only always-on content script is an isolated relay. It listens for one event from the blank-window guard and does not read the page. The blank-window script is registered only while High Security is on. The three page guards are separate main-world scripts, registered only while their popup toggle is on (they default on). Turning a guard off unregisters that script for documents opened later. It does not remove a hook already installed in an open page; reload the page to drop it. The wallet script does nothing until `window.ethereum` exists or an EIP-6963 provider is announced. The recovery-phrase script keeps the words in the page long enough to checksum them, then drops them. It does not message them to the extension. The native host and the loopback helper each fetch the public URL themselves and drop the body before they answer. The native host does not log the request.
+
+Safari has no `scripting` permission. Those three hooks are not injected there. See the Safari section of the README.
 
 Safari loads the same scripts from `apps/safari` and asks the containing app for the certificate chain. It does not use this Chrome host. The browser differences, the native handler, and the Xcode steps are in `docs/SAFARI-TESTING.md`.

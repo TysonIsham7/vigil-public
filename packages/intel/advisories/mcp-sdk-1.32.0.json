@@ -1,0 +1,9 @@
+{
+  "id": "MCP-SDK-1.32.0",
+  "published": "2026-10-02",
+  "package": "@modelcontextprotocol/sdk",
+  "ecosystem": "npm",
+  "fixed": "1.32.0",
+  "summary": "Exact versions of @modelcontextprotocol/sdk below 1.32.0 are in the affected range for the October 2026 SDK advisories, including cross-origin redirect handling and bearer-token audience checks. A range without a lockfile is not an exact match.",
+  "remediation": "Upgrade @modelcontextprotocol/sdk to 1.32.0 or newer and pin that version in the lockfile."
+}

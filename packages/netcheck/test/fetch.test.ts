@@ -1,5 +1,8 @@
+import http from "node:http";
+import type { AddressInfo } from "node:net";
 import { describe, expect, it } from "vitest";
 import { UrlRejected } from "@vigil/core";
+import { nodePinnedFetch } from "../src/fetch.js";
 import { pinAddress, pinnedLookup, safeFetch, connectCertificateChain } from "../src/index.js";
 
 const lookup = async (host: string) => {
@@ -73,5 +76,54 @@ describe("safeFetch", () => {
     const result = await safeFetch("https://example.com/", { lookup, fetchImpl, maxBytes: 10 });
     expect(result.truncated).toBe(true);
     expect(result.body).toBe("x".repeat(10));
+    expect(result.ttfbMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("records time to headers before the body is read", async () => {
+    let bodyAt = 0;
+    const started = Date.now();
+    const fetchImpl: typeof fetch = async () => new Response(new ReadableStream({
+      start(controller) {
+        setTimeout(() => {
+          bodyAt = Date.now();
+          controller.enqueue(new TextEncoder().encode("hello"));
+          controller.close();
+        }, 50);
+      },
+    }), { status: 200 });
+    const result = await safeFetch("https://example.com/", { lookup, fetchImpl });
+    expect(bodyAt).toBeGreaterThan(started);
+    expect(result.body).toBe("hello");
+    expect(result.ttfbMs).toBeLessThan(bodyAt - started);
+  });
+
+  it("resolves the pinned request when headers arrive", async () => {
+    let bodySent = false;
+    const server = http.createServer((_req, res) => {
+      res.writeHead(200, { "content-type": "text/plain", "x-vigil": "head" });
+      res.flushHeaders();
+      setTimeout(() => {
+        bodySent = true;
+        res.end("slow-body");
+      }, 60);
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
+    const address = server.address() as AddressInfo;
+    try {
+      const response = await nodePinnedFetch(new URL(`http://127.0.0.1:${address.port}/slow`), {
+        address: "127.0.0.1",
+        family: 4,
+      }, {
+        headers: { "user-agent": "vigil/2.0" },
+        signal: AbortSignal.timeout(2_000),
+      });
+      expect(bodySent).toBe(false);
+      expect(response.status).toBe(200);
+      expect(response.headers.get("x-vigil")).toBe("head");
+      expect(await response.text()).toBe("slow-body");
+      expect(bodySent).toBe(true);
+    } finally {
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
   });
 });

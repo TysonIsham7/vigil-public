@@ -32,6 +32,7 @@ export function isLockfile(name: string): boolean {
   const base = basename(name);
   return (
     base === "package-lock.json" ||
+    base === "npm-shrinkwrap.json" ||
     base === "pnpm-lock.yaml" ||
     base === "yarn.lock" ||
     base === "poetry.lock" ||

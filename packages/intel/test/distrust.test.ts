@@ -39,13 +39,12 @@ describe("distrusted CAs", () => {
   });
 
   it("does not send a host to a disabled reputation provider", async () => {
-    let observed = "";
     const provider = disabledReputation("safe-browsing");
     const result = await provider.check({
       host: "user-typed.example",
       registrableDomain: "example",
     });
-    observed = JSON.stringify(result);
+    const observed = JSON.stringify(result);
     expect(result.status).toBe("not-configured");
     expect(observed).not.toContain("user-typed.example");
   });

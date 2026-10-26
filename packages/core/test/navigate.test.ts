@@ -123,6 +123,17 @@ describe("navigation gate", () => {
     expect(after([signal({ id: "DOMAIN_SUBDOMAIN_DEPTH", severity: "medium" })]).intercept).toBe(false);
   });
 
+  it("keeps an informational note without turning the badge into a warning", () => {
+    const decision = after([signal({ id: "PHP2SHELL_EXPOSURE", severity: "informational", recommendationOnly: true, title: "PHP2Shell: not-PHP" })]);
+    expect(decision.intercept).toBe(false);
+    expect(decision.action).toBe("allow");
+    expect(decision.badge).toBe("allow");
+    expect(decision.popup.map((item) => item.id)).toEqual(["PHP2SHELL_EXPOSURE"]);
+    const hidden = after([signal({ id: "PHP2SHELL_EXPOSURE", severity: "high", recommendationOnly: true, title: "PHP2Shell: hidden" })]);
+    expect(hidden.intercept).toBe(false);
+    expect(hidden.action).toBe("warn");
+  });
+
   it("holds a confirmed advisory and not a version-less PHP hint", () => {
     const confirmed = after([signal({ id: "PHP_CVE_2026_109618", confidence: "high" })]);
     expect(confirmed.intercept).toBe(true);
@@ -131,6 +142,8 @@ describe("navigation gate", () => {
     expect(suspected.intercept).toBe(false);
     const litellm = after([signal({ id: "DEP_LITELLM_COMPROMISED", severity: "critical", recommendationOnly: false })]);
     expect(litellm.action).toBe("block");
+    const session = after([signal({ id: "PHP_CVE_2026_115560", severity: "informational", recommendationOnly: true })]);
+    expect(session.intercept).toBe(false);
   });
 
   it("fails closed on timeout in High Security and does not cache an allow", () => {

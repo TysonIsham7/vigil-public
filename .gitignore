@@ -1,5 +1,7 @@
 node_modules/
 dist/
+!fixtures/install-gate/dist-bin/dist/
+!fixtures/install-gate/dist-bin/dist/**
 apps/safari/Shared (Extension)/Resources/*
 !apps/safari/Shared (Extension)/Resources/.gitkeep
 apps/safari/Shared (Extension)/Generated/*
@@ -25,3 +27,5 @@ dd-*/
 gitleaks
 trufflehog
 .gitleaks-report.json
+.publish-public.denylist
+.publish-public.local.yml

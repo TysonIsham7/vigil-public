@@ -1,0 +1,89 @@
+# Sample for a private Swift/Xcode app (TailRemote-style).
+# Copy to the private repo as .publish-public.yml.
+# Put the real team ID, bundle IDs, Mac name, username, home path, email,
+# device model, and business name in .publish-public.local.yml (gitignored).
+
+public_remote: https://github.com/OWNER/tailremote-public.git
+public_branch: main
+commit_message: "Publish sanitized snapshot"
+author_name: "Tyson Isham"
+author_email: "131544016+TysonIsham7@users.noreply.github.com"
+denylist: .publish-public.denylist
+builtin_drops: true
+
+drop:
+  - "**/xcuserdata"
+  - "**/*.xcuserstate"
+  - "**/DerivedData"
+  - "Config/Local.xcconfig"
+  - "Config/Signing.local.xcconfig"
+  - "**/*.mobileprovision"
+  - "**/*.p12"
+  - "**/*.p8"
+
+replacements:
+  - from: "REPLACE_APPLE_TEAM_ID"
+    to: "XXXXXXXXXX"
+  - from: "REPLACE_BUNDLE_ID"
+    to: "com.example.tailremote"
+  - from: "REPLACE_BUNDLE_ID_SHARE"
+    to: "com.example.tailremote.share"
+  - from: "REPLACE_BUNDLE_ID_WIDGET"
+    to: "com.example.tailremote.widget"
+  - from: "REPLACE_MAC_HOSTNAME"
+    to: "mac.example"
+  - from: "REPLACE_USERNAME"
+    to: "example"
+  - from: "REPLACE_HOME"
+    to: "/Users/example"
+  - from: "REPLACE_EMAIL"
+    to: "user@example.com"
+  - from: "REPLACE_DEVICE_MODEL"
+    to: "iPhone"
+  - from: "REPLACE_BUSINESS_NAME"
+    to: "Example Company"
+
+  - pattern: 'DEVELOPMENT_TEAM = [A-Z0-9]{10}'
+    to: 'DEVELOPMENT_TEAM = XXXXXXXXXX'
+    skip_if_match: 'XXXXXXXXXX'
+  - pattern: 'DEVELOPMENT_TEAM: [A-Z0-9]{10}'
+    to: 'DEVELOPMENT_TEAM: XXXXXXXXXX'
+    skip_if_match: 'XXXXXXXXXX'
+  - pattern: 'DevelopmentTeam = [A-Z0-9]{10}'
+    to: 'DevelopmentTeam = XXXXXXXXXX'
+    skip_if_match: 'XXXXXXXXXX'
+  - pattern: 'PRODUCT_BUNDLE_IDENTIFIER = [^;]+;'
+    to: 'PRODUCT_BUNDLE_IDENTIFIER = com.example.tailremote;'
+    skip_if_match: 'com\.example\.'
+  - pattern: 'PRODUCT_BUNDLE_IDENTIFIER: [^[:space:]#]+'
+    to: 'PRODUCT_BUNDLE_IDENTIFIER: com.example.tailremote'
+    skip_if_match: 'com\.example\.'
+  - pattern: 'CODE_SIGN_STYLE = Automatic;'
+    to: 'CODE_SIGN_STYLE = Manual;'
+  - pattern: 'CODE_SIGN_STYLE: Automatic'
+    to: 'CODE_SIGN_STYLE: Manual'
+  - pattern: 'CODE_SIGN_IDENTITY = .*;'
+    to: 'CODE_SIGN_IDENTITY = "-";'
+  - pattern: 'PROVISIONING_PROFILE_SPECIFIER = .*;'
+    to: 'PROVISIONING_PROFILE_SPECIFIER = "";'
+  - pattern: 'ORGANIZATIONNAME = .*;'
+    to: 'ORGANIZATIONNAME = "Example Company";'
+    skip_if_match: 'Example Company'
+  - pattern: '/Users/[A-Za-z0-9._-]+'
+    to: '/Users/example'
+    skip_if_match: '^/Users/example$'
+  - pattern: '/home/[A-Za-z0-9._-]+'
+    to: '/home/example'
+    skip_if_match: '^/home/example$'
+  - pattern: 'C:\\Users\\[A-Za-z0-9._-]+'
+    to: 'C:\Users\example'
+    skip_if_match: '^C:\\Users\\example$'
+  - pattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
+    to: 'user@example.com'
+    skip_if_match: '@(example\.com|example\.org|users\.noreply\.github\.com)$'
+  - pattern: 'MacBook( Pro| Air)?'
+    to: 'Mac'
+  - pattern: 'iPhone[0-9]+,[0-9]+'
+    to: 'iPhone'
+  - pattern: 'iPad[0-9]+,[0-9]+'
+    to: 'iPad'

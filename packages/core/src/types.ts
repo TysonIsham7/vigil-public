@@ -131,7 +131,7 @@ export interface VulnCheck {
   cves: string[];
   component: string;
   detectedVersion?: string;
-  status: "vulnerable" | "suspected" | "fingerprint" | "fixed" | "not-applicable";
+  status: "vulnerable" | "suspected" | "fingerprint" | "fixed" | "not-applicable" | "unknown";
   audience: "owner" | "visitor" | "local";
   level: CheckLevel | "info";
   mitigation?: string;
@@ -168,7 +168,14 @@ export interface Report {
   findings: Finding[];
   headers?: Record<string, string>;
   cookies?: { name: string; secure: boolean; httpOnly: boolean; sameSite: boolean }[];
-  tls?: { authorized: boolean | null; issuer?: string; daysRemaining?: number | null; error?: string };
+  tls?: {
+    authorized: boolean | null;
+    issuer?: string;
+    daysRemaining?: number | null;
+    error?: string;
+    protocol?: string;
+    cipher?: string;
+  };
   improvedPrompt?: string;
   education: { category: string; text: string }[];
   disclaimer: string;

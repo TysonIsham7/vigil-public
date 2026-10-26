@@ -39,12 +39,23 @@ export {
   parseCookieFlags,
   tlsRecommendation,
 } from "./headers.js";
-export { LimitError, prepareFiles, sanitizeRelativePath } from "./limits.js";
+export { GATE_LIMITS, LimitError, prepareFiles, sanitizeRelativePath } from "./limits.js";
 export { visibleLines } from "./lines.js";
 export { SECURITY_APPENDIX, deterministicPrompt, maybeRewritePrompt } from "./prompt.js";
 export { redactEvidence } from "./redact.js";
 export { EphemeralReports } from "./cache.js";
 export { PHASE1_BLOCKERS, PHASE1_RECOMMENDATIONS, ruleCatalog, scanSource } from "./rules.js";
+export {
+  budgetFinding,
+  dynamicFindings,
+  installBehaviorFindings,
+  lifecyclePlan,
+  moduleGraph,
+  resolveRelative,
+  scriptFiles,
+  unreadFinding,
+} from "./install.js";
+export type { LifecyclePlan, ModuleGraph, ModuleSpecifier } from "./install.js";
 export {
   blockDeploy,
   buildReport,
@@ -95,3 +106,17 @@ export {
   parseIPv4,
 } from "./ssrf.js";
 export { utf8Encode, wipe } from "./utf8.js";
+export {
+  AGENT_TEXT_CAP,
+  AGENT_WINDOW,
+  detectAgentDirected,
+  extractPageSurfaces,
+  inspectHtml,
+  surfaceFile,
+} from "./agent-directed.js";
+export type { AgentAskKind, AgentMatch, AgentSurface, PageSurfaces } from "./agent-directed.js";
+export { classifyClickFix, clickFixCopy } from "./guards/clickfix.js";
+export type { ClickFixKind, ClickFixResult } from "./guards/clickfix.js";
+export { BIP39_ENGLISH_SHA256, findSeedPhrase, seedGuardCopy } from "./guards/seed-phrase.js";
+export { classifyWalletRequest, walletGuardCopy } from "./guards/wallet-request.js";
+export type { WalletReason, WalletRequestRisk } from "./guards/wallet-request.js";

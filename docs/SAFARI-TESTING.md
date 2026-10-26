@@ -2,7 +2,7 @@
 
 Safari uses the same extension scripts as Chrome: `apps/extension/src`. Safari-only behavior sits in `apps/extension/src/platform.ts`, `apps/safari/manifest.json`, and the Xcode container. The unit tests in this repo exercise that shared logic and lint the manifest, plists, and project file. They do not launch Safari or Xcode. A green `pnpm check` is not a Safari pass. Run the steps below on a Mac, and on an iPhone with iOS 26.
 
-iOS, including Safari on iPhone, is in this tree. Build it yourself with the **Vigil iOS** scheme and install it on a phone you control. This is a local Xcode run. It is not an App Store release, and it is not a TestFlight build. Do not archive it for distribution, and do not upload it to App Store Connect.
+The container is a local build. Do not archive it for distribution, and do not upload it to App Store Connect or TestFlight.
 
 ## Build the extension resources
 

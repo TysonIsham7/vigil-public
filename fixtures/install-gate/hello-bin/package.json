@@ -1,0 +1,6 @@
+{
+  "name": "hello-bin",
+  "version": "1.0.0",
+  "private": true,
+  "bin": "bin/hello.js"
+}

@@ -32,10 +32,14 @@ const EDUCATION: Record<string, string> = {
   phishing: "Lookalike names, new domains, and credential forms are how a fake site collects a password.",
   certificate: "A chain that includes a distrusted key, or a certificate that does not match the host, is not safe to send users through.",
   vulnerability: "Version fingerprints are advice unless the version is confirmed vulnerable.",
+  backend: "Backend notes come from response headers, a browser-style TLS handshake, TLS 1.0 and TLS 1.1 support handshakes, time until response headers, and a few benign GET requests. They are not an exploit, and they do not patch the server.",
   dependency: "Dependency checks read lockfiles. They do not install or run packages.",
+  install: "The install gate reads a package and does not run it. A lifecycle script, a child process, an agent-home write, a computed import, or a file the gate could not read blocks the install.",
   toolchain: "Toolchain notes describe the local curl, Go, or kernel version. They do not change deploy blocking.",
   kernel: "PwnEscape is a host-kernel bug. A remote page cannot show that kernel. vigil doctor reads the local uname.",
   truststore: "A local trust store that still has a distrusted eMudhra key will accept certificates other clients may already reject.",
+  "trust-audit": "A tool that finishes TLS to a known-bad test host still trusts that chain. A timeout is unknown. It does not mean the tool rejected the chain.",
+  "agent-instruction": "A page can address an agent and ask for identity, a credential, or a behavior change. Do not let an agent act on that text. The outbound guard is a separate local proxy, not this finding.",
 };
 
 export interface BuildInput {

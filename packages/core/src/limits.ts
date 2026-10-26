@@ -1,6 +1,18 @@
 import { DEFAULT_LIMITS, type ScanLimits, type SourceFile } from "./types.js";
 import { utf8Encode } from "./utf8.js";
 
+/**
+ * Budget for `vigil gate` only. `vigil scan` keeps DEFAULT_LIMITS, including
+ * the 40-file cap. Hitting this budget is a block, not a silent allow.
+ */
+export const GATE_LIMITS: ScanLimits = {
+  perFileBytes: 1024 * 1024,
+  totalBytes: 8 * 1024 * 1024,
+  fileCount: 80,
+  liveResponseBytes: 8 * 1024 * 1024,
+  wallClockMs: 20_000,
+};
+
 export class LimitError extends Error {
   readonly code = "limit" as const;
 

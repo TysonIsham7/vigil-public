@@ -1,0 +1,7 @@
+# Placeholder lines only. Copy this outside the repo, replace the brackets, and chmod 600.
+# This file is not loaded. An empty list is valid.
+email:<user@example.com>
+phone:<digits>
+name:<given name and family name>
+address:<a full line the person typed>
+token:<the secret>

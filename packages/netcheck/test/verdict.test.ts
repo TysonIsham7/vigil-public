@@ -31,6 +31,10 @@ describe("host verdict", () => {
     expect(php?.title).toBe("Upgrade PHP");
     expect(php?.summary.startsWith("Upgrade PHP")).toBe(true);
     expect(php?.summary).toMatch(/partial mitigation/);
+    expect(php?.summary).toMatch(/CVE-2026-115560/);
+    expect(php?.summary).not.toMatch(/does not block a deploy or hold a page/);
+    expect(result.signals.some((signal) => signal.id === "PHP_CVE_2026_115560")).toBe(false);
+    expect(result.signals.find((signal) => signal.id === "PHP2SHELL_EXPOSURE")?.title).toBe("PHP2Shell: exposed");
     expect(result.signals.some((signal) => signal.id === "KERNEL_SHARED_HOST")).toBe(false);
     const encoded = JSON.stringify(result);
     expect(encoded).not.toContain("BEGIN CERTIFICATE");
@@ -87,6 +91,70 @@ describe("host verdict", () => {
     expect(decision.intercept).toBe(false);
     expect(decision.gating).toEqual([]);
     expect(decision.popup.some((signal) => signal.id.startsWith("HEADER_"))).toBe(true);
+  });
+
+  it("holds High Security on a vulnerable PHP version that follows a patched one", async () => {
+    const result = await hostVerdict("example.com", {
+      now: new Date("2026-10-21T00:00:00.000Z"),
+      ageDays: 400,
+      lookup,
+      fetchImpl: (async () => new Response("<!doctype html><title>Example</title>", {
+        status: 200,
+        headers: { "content-type": "text/html", "x-powered-by": "PHP/8.2.35", server: "PHP/8.2.34" },
+      })) as typeof fetch,
+      connectImpl: async () => {
+        throw new Error("tls down");
+      },
+    });
+    const php = result.signals.find((signal) => signal.id === "PHP_CVE_2026_109618");
+    expect(php?.confidence).toBe("high");
+    expect(php?.summary).toContain("8.2.34");
+    expect(result.signals.find((signal) => signal.id === "PHP2SHELL_EXPOSURE")?.title).toBe("PHP2Shell: exposed");
+    const decision = planAfter({
+      mode: "high",
+      host: "example.com",
+      signals: result.signals,
+      timedOut: false,
+      now: Date.parse("2026-10-21T00:00:00.000Z"),
+      intelVersion: result.intelVersion,
+      coverage: "full",
+    });
+    expect(decision.intercept).toBe(true);
+    expect(decision.action).toBe("hold");
+    expect(decision.reason).toBe("advisory");
+    expect(decision.gating.some((signal) => signal.id === "PHP_CVE_2026_109618")).toBe(true);
+    expect(result.signals.some((signal) => signal.id === "PHP_CVE_2026_115560")).toBe(false);
+  });
+
+  it("keeps the unfixed PHP session note off the hold page", async () => {
+    const result = await hostVerdict("example.com", {
+      now: new Date("2026-10-21T00:00:00.000Z"),
+      ageDays: 400,
+      lookup,
+      fetchImpl: (async () => new Response("<!doctype html><title>Example</title>", {
+        status: 200,
+        headers: { "content-type": "text/html", "x-powered-by": "PHP/8.5.12" },
+      })) as typeof fetch,
+      connectImpl: async () => {
+        throw new Error("tls down");
+      },
+    });
+    const note = result.signals.find((signal) => signal.id === "PHP_CVE_2026_115560");
+    expect(note?.severity).toBe("informational");
+    expect(note?.recommendationOnly).toBe(true);
+    expect(note?.summary).toMatch(/8\.5\.12/);
+    expect(result.signals.some((signal) => signal.id === "PHP_CVE_2026_109618")).toBe(false);
+    const decision = planAfter({
+      mode: "high",
+      host: "example.com",
+      signals: result.signals,
+      timedOut: false,
+      now: Date.parse("2026-10-21T00:00:00.000Z"),
+      intelVersion: result.intelVersion,
+      coverage: "full",
+    });
+    expect(decision.intercept).toBe(false);
+    expect(decision.gating).toEqual([]);
   });
 
   it("rejects a loopback host and times out a stuck check", async () => {

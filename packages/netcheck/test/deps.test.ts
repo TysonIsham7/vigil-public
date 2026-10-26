@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildReport } from "@vigil/core";
 import { intermediatePems } from "@vigil/intel";
-import { assessToolchain, dependencyFindings, kernelFinding, parseDependencies, queryOsv, sharedHostFinding, trustStoreFindings, versionToken } from "../src/index.js";
+import { assessToolchain, dependencyFindings, gateDependencyReport, kernelFinding, manifestDependencies, parseDependencies, parseDockerImages, queryOsv, sharedHostFinding, trustStoreFindings, versionToken } from "../src/index.js";
 import { ageInDays, registrationDate, selectRdapServer } from "../src/index.js";
 
 const depsDir = join(import.meta.dirname, "../../../fixtures/deps");
@@ -23,6 +23,21 @@ describe("lockfiles and OSV", () => {
       expect.objectContaining({ ecosystem: "Packagist", name: "vendor/pkg", version: "1.2.3" }),
     ]));
     expect(packages.some((pkg) => pkg.version.includes("go.mod"))).toBe(false);
+  });
+
+  it("blocks exact axios and MCP SDK pins", () => {
+    const { findings } = dependencyFindings([
+      { ecosystem: "npm", name: "axios", version: "1.14.1", source: "package-lock.json" },
+      { ecosystem: "npm", name: "axios", version: "1.14.0", source: "package-lock.json" },
+      { ecosystem: "npm", name: "@modelcontextprotocol/sdk", version: "1.31.0", source: "package-lock.json" },
+      { ecosystem: "npm", name: "@modelcontextprotocol/sdk", version: "1.32.0", source: "package-lock.json" },
+      { ecosystem: "npm", name: "litellm", version: "1.107.0", source: "requirements.txt" },
+    ], { hits: [] });
+    expect(findings.some((finding) => finding.id === "DEP_AXIOS_COMPROMISED" && finding.evidence === "axios@1.14.1")).toBe(true);
+    expect(findings.some((finding) => finding.evidence === "axios@1.14.0")).toBe(false);
+    expect(findings.some((finding) => finding.id === "DEP_MCP_SDK" && finding.evidence === "@modelcontextprotocol/sdk@1.31.0")).toBe(true);
+    expect(findings.some((finding) => finding.evidence === "@modelcontextprotocol/sdk@1.32.0")).toBe(false);
+    expect(findings.some((finding) => finding.id === "DEP_LITELLM_COMPROMISED")).toBe(true);
   });
 
   it("blocks the exact LiteLLM pin and keeps OSV as a recommendation", () => {
@@ -45,6 +60,78 @@ describe("lockfiles and OSV", () => {
     const { findings, deps } = dependencyFindings(packages, osv);
     expect(findings.some((finding) => finding.id === "DEP_LITELLM_COMPROMISED")).toBe(true);
     expect(deps.some((dep) => dep.level === "unknown")).toBe(true);
+  });
+
+  it("keeps an exact version on an npm: alias", () => {
+    const deps = manifestDependencies({
+      name: "package.json",
+      content: JSON.stringify({
+        dependencies: {
+          request: "npm:axios@1.14.1",
+          old: "npm:axios@0.30.4",
+          dropper: "npm:plain-crypto-js@4.2.0",
+          ranged: "npm:axios@^1.14.0",
+          scoped: "npm:@modelcontextprotocol/sdk@1.31.0",
+        },
+      }),
+    });
+    expect(deps).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "axios", version: "1.14.1", spec: "npm:axios@1.14.1" }),
+      expect.objectContaining({ name: "axios", version: "0.30.4" }),
+      expect.objectContaining({ name: "plain-crypto-js", version: "4.2.0" }),
+      expect.objectContaining({ name: "axios", spec: "npm:axios@^1.14.0", version: null }),
+      expect.objectContaining({ name: "@modelcontextprotocol/sdk", version: "1.31.0" }),
+    ]));
+    const report = gateDependencyReport({
+      name: "package.json",
+      content: JSON.stringify({ dependencies: { request: "npm:axios@1.14.1" } }),
+    }, []);
+    expect(report.findings.some((finding) => finding.id === "DEP_AXIOS_COMPROMISED" && finding.evidence === "axios@1.14.1")).toBe(true);
+    expect(report.findings.some((finding) => finding.id === "DEP_RANGE")).toBe(false);
+  });
+
+  it("reads a lockfileVersion 1 tree and strips pnpm peer suffixes", () => {
+    const v1 = parseDependencies([{
+      name: "package-lock.json",
+      content: JSON.stringify({
+        lockfileVersion: 1,
+        dependencies: {
+          left: {
+            version: "1.0.0",
+            dependencies: { axios: { version: "0.30.4" } },
+          },
+        },
+      }),
+    }]);
+    expect(v1).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "left", version: "1.0.0" }),
+      expect.objectContaining({ name: "axios", version: "0.30.4" }),
+    ]));
+    const pnpm = parseDependencies([{
+      name: "pnpm-lock.yaml",
+      content: [
+        "lockfileVersion: '9.0'",
+        "",
+        "packages:",
+        "",
+        "  axios@1.14.1(react@18.2.0):",
+        "    resolution: {integrity: sha}",
+        "",
+        "  'axios@0.30.4(react@18.2.0(react-dom@18.2.0))':",
+        "    resolution: {integrity: sha}",
+        "",
+      ].join("\n"),
+    }]);
+    expect(pnpm).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "axios", version: "1.14.1" }),
+      expect.objectContaining({ name: "axios", version: "0.30.4" }),
+    ]));
+    expect(pnpm.some((pkg) => pkg.version.includes("("))).toBe(false);
+    const report = gateDependencyReport(null, [{
+      name: "pnpm-lock.yaml",
+      content: "lockfileVersion: '9.0'\n\npackages:\n\n  axios@1.14.1(react@18.2.0):\n    resolution: {integrity: sha}\n",
+    }]);
+    expect(report.findings.some((finding) => finding.id === "DEP_AXIOS_COMPROMISED" && finding.evidence === "axios@1.14.1")).toBe(true);
   });
 
   it("chunks are not required to call the network for an empty set", async () => {
@@ -91,6 +178,40 @@ describe("doctor toolchain", () => {
     expect(nodeOk.some((finding) => finding.id === "TOOLCHAIN_NODE")).toBe(false);
     expect(assessToolchain({ nodeVersion: "v24.22.0" }).some((finding) => finding.id === "TOOLCHAIN_NODE")).toBe(true);
     expect(assessToolchain({ nodeVersion: "v26.12.1" }).some((finding) => finding.id === "TOOLCHAIN_NODE")).toBe(false);
+    const nginxOld = assessToolchain({ nginxVersion: "nginx version: nginx/1.31.6" });
+    const nginxStable = assessToolchain({ nginxVersion: "nginx version: nginx/1.30.6" });
+    expect(nginxOld.find((finding) => finding.id === "TOOLCHAIN_NGINX")?.recommendationOnly).toBe(true);
+    expect(nginxOld.find((finding) => finding.id === "TOOLCHAIN_NGINX")?.evidence).toBe("1.31.6");
+    expect(nginxStable.some((finding) => finding.id === "TOOLCHAIN_NGINX")).toBe(false);
+  });
+
+  it("reports nginx image tags without padding the floating 1.31 and 1.30 lines", () => {
+    const parsed = parseDockerImages("Dockerfile", [
+      "FROM nginx:1.31",
+      "FROM nginx:1.31-alpine3.24",
+      "FROM nginx:1.30",
+      "FROM nginx:1.30-alpine",
+      "FROM nginx:1.29",
+      "FROM nginx:1.28",
+      "FROM nginx:1.31.6-alpine3.21",
+      "FROM localhost:5000/nginx:1.31.6",
+      "FROM nginx:1.31.6@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "FROM nginx:1.31.7-alpine",
+      "FROM nginxinc/nginx-prometheus-exporter:1.0.0",
+      "FROM nginxinc/nginx-unprivileged:1.30.5",
+    ].join("\n"));
+    expect(parsed.find((image) => image.image.startsWith("localhost:"))?.tag).toBe("1.31.6");
+    expect(parsed.find((image) => image.image.includes("@sha256"))?.tag).toBe("1.31.6");
+    const flagged = assessToolchain({ images: parsed }).filter((finding) => finding.id === "TOOLCHAIN_IMAGE");
+    expect(flagged.map((finding) => finding.evidence).sort()).toEqual([
+      "localhost:5000/nginx:1.31.6",
+      "nginx:1.28",
+      "nginx:1.29",
+      "nginx:1.31.6-alpine3.21",
+      "nginx:1.31.6@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "nginxinc/nginx-unprivileged:1.30.5",
+    ]);
+    expect(flagged.every((finding) => finding.recommendationOnly)).toBe(true);
   });
 
   it("reports an affected uname and a trust store that still has an eMudhra key", () => {
@@ -112,6 +233,12 @@ describe("doctor toolchain", () => {
     expect(JSON.stringify(trust)).not.toContain("BEGIN CERTIFICATE");
     expect(findings.some((finding) => finding.id === "TOOLCHAIN_GO")).toBe(false);
     expect(assessToolchain({ kernelRelease: "6.12.113", kernelOs: "Linux" }).some((finding) => finding.id === "KERNEL_CVE_2026_99999")).toBe(false);
+    const oldPip = assessToolchain({ pipVersion: "pip 24.0 from /usr/lib/python3/dist-packages/pip (python 3.12)", uvVersion: "uv 0.13.3" });
+    expect(oldPip.find((finding) => finding.id === "TOOLCHAIN_PIP")).toMatchObject({ recommendationOnly: true, evidence: "24.0.0" });
+    expect(oldPip.find((finding) => finding.id === "TOOLCHAIN_UV")).toMatchObject({ recommendationOnly: true, evidence: "0.13.3" });
+    expect(JSON.stringify(oldPip)).not.toContain("/usr/lib");
+    const currentPip = assessToolchain({ pipVersion: "pip 26.2.2 from /opt/pip", uvVersion: "uv 0.13.4" });
+    expect(currentPip.some((finding) => finding.id === "TOOLCHAIN_PIP" || finding.id === "TOOLCHAIN_UV")).toBe(false);
     expect(assessToolchain({ kernelRelease: "24.6.0", kernelOs: "Darwin" }).some((finding) => finding.id === "KERNEL_CVE_2026_99999")).toBe(false);
     expect(trustStoreFindings([{ label: "certifi", pem: "" }])).toEqual([]);
     expect(kernelFinding("7.2.11")).toBeUndefined();

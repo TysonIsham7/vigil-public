@@ -254,6 +254,7 @@ export function planAfter(input: {
   const popup = [...input.signals];
   const gating = popup.filter((signal) => holdsNavigation(signal));
   const blocking = gating.some((signal) => signal.severity === "critical" && !signal.recommendationOnly);
+  const notable = popup.some((signal) => signal.severity !== "informational");
   let action: NavAction;
   let reason: NavDecision["reason"];
   if (gating.length === 0 && input.timedOut) {
@@ -265,7 +266,7 @@ export function planAfter(input: {
   } else if (gating.length > 0) {
     action = "hold";
     reason = reasonFor(gating);
-  } else if (popup.length > 0) {
+  } else if (notable) {
     action = "warn";
     reason = input.mode === "normal" ? "passive" : "clean";
   } else {

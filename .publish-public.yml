@@ -1,0 +1,97 @@
+# Publish config for the private Vigil repo.
+# Real host names, team IDs, and other literals belong in
+# .publish-public.local.yml (gitignored), not in this file.
+# Run: bash tools/publish-public/publish.sh
+
+public_remote: https://github.com/TysonIsham7/vigil-public.git
+public_branch: main
+commit_message: "Publish sanitized snapshot"
+author_name: "Tyson Isham"
+author_email: "131544016+TysonIsham7@users.noreply.github.com"
+denylist: .publish-public.denylist
+gitleaks_config: .gitleaks.toml
+builtin_drops: true
+
+drop:
+  - docs/HANDOFF.md
+  - publish
+
+# Placeholder tokens in fixtures and detector tests are intentional.
+# A literal that shows up outside these paths still fails the publish.
+denylist_allow:
+  - "fixtures/**"
+  - "**/test/**"
+  - "apps/safari/Vigil macOS Tests/**"
+
+replacements:
+  # Edit copies of these in .publish-public.local.yml so the real strings
+  # stay untracked. The sentinels below do nothing until a file contains them.
+  - from: "REPLACE_APPLE_TEAM_ID"
+    to: "XXXXXXXXXX"
+  - from: "REPLACE_BUNDLE_ID"
+    to: "com.example.vigil"
+  - from: "REPLACE_MAC_HOSTNAME"
+    to: "mac.example"
+  - from: "REPLACE_USERNAME"
+    to: "example"
+  - from: "REPLACE_HOME"
+    to: "/Users/example"
+  - from: "REPLACE_EMAIL"
+    to: "user@example.com"
+  - from: "REPLACE_DEVICE_MODEL"
+    to: "iPhone"
+  - from: "REPLACE_BUSINESS_NAME"
+    to: "Example Company"
+
+  - pattern: 'DEVELOPMENT_TEAM = [A-Z0-9]{10}'
+    to: 'DEVELOPMENT_TEAM = XXXXXXXXXX'
+    skip_if_match: 'XXXXXXXXXX'
+  - pattern: 'DEVELOPMENT_TEAM: [A-Z0-9]{10}'
+    to: 'DEVELOPMENT_TEAM: XXXXXXXXXX'
+    skip_if_match: 'XXXXXXXXXX'
+  - pattern: 'PRODUCT_BUNDLE_IDENTIFIER = [^;[:space:]]+'
+    to: 'PRODUCT_BUNDLE_IDENTIFIER = com.example.vigil'
+    skip_if_match: 'com\.example\.'
+    paths:
+      - "**/*.pbxproj"
+      - "**/*.xcconfig"
+  - pattern: 'PRODUCT_BUNDLE_IDENTIFIER: [^[:space:]#]+'
+    to: 'PRODUCT_BUNDLE_IDENTIFIER: com.example.vigil'
+    skip_if_match: 'com\.example\.'
+    paths:
+      - "**/project.yml"
+      - "**/*.xcconfig"
+  - pattern: '/Users/[A-Za-z0-9._-]+'
+    to: '/Users/example'
+    skip_if_match: '^/Users/example$'
+  - pattern: '/home/[A-Za-z0-9._-]+'
+    to: '/home/example'
+    skip_if_match: '^/home/example$'
+  - pattern: 'C:\\Users\\[A-Za-z0-9._-]+'
+    to: 'C:\Users\example'
+    skip_if_match: '^C:\\Users\\example$'
+  - pattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
+    to: 'user@example.com'
+    skip_if_match: '@(example\.com|example\.org|users\.noreply\.github\.com)$'
+  - pattern: 'MacBook( Pro| Air)?'
+    to: 'Mac'
+    skip_paths:
+      - "**/test/**"
+      - "**/*test*"
+      - "fixtures/**"
+      - "tools/publish-public/**"
+      - "publish/**"
+  - pattern: 'iPhone[0-9]+,[0-9]+'
+    to: 'iPhone'
+    skip_paths:
+      - "**/test/**"
+      - "**/*test*"
+      - "fixtures/**"
+      - "tools/publish-public/**"
+  - pattern: 'iPad[0-9]+,[0-9]+'
+    to: 'iPad'
+    skip_paths:
+      - "**/test/**"
+      - "**/*test*"
+      - "fixtures/**"
+      - "tools/publish-public/**"

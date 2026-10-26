@@ -16,6 +16,8 @@ import { extensionMessagePage } from "./messages.js";
 import { SESSION_BAG, applySessionRules, hasNativeSession, readEphemeral, sessionAreaFromChrome, setBadge, writeEphemeral, type DnrLike } from "./platform.js";
 import { chromeNativeEnabled } from "./chrome-host.js";
 import { nativeMessagingEnabled } from "./native.js";
+import { DEFAULT_GUARDS, PHP_EXPOSURE_ID, readGuards, type GuardSettings } from "./guard-settings.js";
+import { GUARD_SCRIPT_IDS, enabledGuardScripts } from "./page-guards.js";
 import { localSignals, runHoldScan } from "./scan.js";
 import {
   BLANK_GUARD_ID,
@@ -34,6 +36,7 @@ interface Persisted {
   helperToken: string | null;
   allowlist: string[];
   cache: CacheEntry[];
+  guards: GuardSettings;
 }
 
 interface Stash {
@@ -164,7 +167,7 @@ async function onMessage(message: unknown, sender: { url?: string; tab?: { id?: 
   const type = request.type;
   if (type === OPENER_BLANK_MESSAGE) return holdOpenerBlanks(sender);
   const page = extensionMessagePage(sender.url);
-  if (type === "get-popup" || type === "set-mode" || type === "set-helper") {
+  if (type === "get-popup" || type === "set-mode" || type === "set-helper" || type === "set-guards") {
     if (page !== "popup") return { error: "rejected" };
   } else if (type === "hold-scan" || type === "override-once" || type === "allow-always") {
     if (page !== "hold") return { error: "rejected" };
@@ -177,6 +180,7 @@ async function onMessage(message: unknown, sender: { url?: string; tab?: { id?: 
       typeof request.helperToken === "string" ? request.helperToken : "",
     );
   }
+  if (type === "set-guards") return setGuards(request.guards);
   if (type === "hold-scan") return holdScan(sender.tab?.id);
   if (type === "override-once" || type === "allow-always") {
     return release(sender.tab?.id, type === "allow-always");
@@ -213,6 +217,7 @@ async function holdScan(tabId: number | undefined): Promise<NavDecision & { url?
     helperToken: state.helperToken,
     now: Date.now(),
     startedAt: saved.startedAt,
+    includePhpExposure: state.guards.phpExposure,
     ...nativeScanOptions(),
   });
   if (state.helperOrigin) {
@@ -250,8 +255,8 @@ async function popupState(): Promise<unknown> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const host = tab?.url ? canonicalHost(tab.url) : null;
   const stored = tab?.id === undefined ? undefined : await sessionStore().get(`decision:${tab.id}`);
-  const decision = tab?.id === undefined ? null : stored?.[`decision:${tab.id}`] ?? null;
-  return { mode: state.mode, helperOrigin: state.helperOrigin, helperToken: state.helperToken, allowlist: state.allowlist, host, decision };
+  const decision = hidePhp(tab?.id === undefined ? null : stored?.[`decision:${tab.id}`] ?? null, state.guards.phpExposure);
+  return { mode: state.mode, helperOrigin: state.helperOrigin, helperToken: state.helperToken, allowlist: state.allowlist, guards: state.guards, host, decision };
 }
 
 async function setMode(mode: SecurityMode): Promise<Persisted> {
@@ -265,6 +270,15 @@ async function setMode(mode: SecurityMode): Promise<Persisted> {
   await chrome.storage.local.set({ vigil: next });
   await syncRules();
   await syncBlankGuard();
+  return next;
+}
+
+async function setGuards(value: unknown): Promise<Persisted> {
+  await hydrate();
+  const state = await load();
+  const next = { ...state, guards: readGuards(value, state.guards) };
+  await chrome.storage.local.set({ vigil: next });
+  await syncPageGuards();
   return next;
 }
 
@@ -327,6 +341,37 @@ async function syncRules(): Promise<void> {
   const dnr = (chrome as { declarativeNetRequest?: DnrLike }).declarativeNetRequest;
   const applied = await applySessionRules(dnr, highMode ? highSecurityRules(skipped) : []);
   rulesActive = highMode && applied.applied;
+}
+
+async function syncPageGuards(): Promise<void> {
+  const scripting = chrome.scripting;
+  if (!scripting?.unregisterContentScripts || !scripting.registerContentScripts) return;
+  const state = await load();
+  try {
+    await scripting.unregisterContentScripts({ ids: [...GUARD_SCRIPT_IDS] });
+  } catch {
+    /* None of the guards were registered. */
+  }
+  const scripts = enabledGuardScripts(state.guards);
+  if (scripts.length === 0) return;
+  try {
+    await scripting.registerContentScripts(scripts);
+    const tabs = await chrome.tabs.query({});
+    await Promise.all(tabs.map(async (tab) => {
+      if (tab.id === undefined || !httpPageUrl(tab.url)) return;
+      try {
+        await scripting.executeScript?.({
+          target: { tabId: tab.id, allFrames: true },
+          files: scripts.map((script) => script.js[0]),
+          world: "MAIN",
+        });
+      } catch {
+        /* Privileged or discarded tabs cannot be injected. */
+      }
+    }));
+  } catch {
+    /* Safari has no scripting permission. The PHP class still arrives with a verdict. */
+  }
 }
 
 async function syncBlankGuard(): Promise<void> {
@@ -410,6 +455,7 @@ async function load(): Promise<Persisted> {
     helperToken: typeof record.helperToken === "string" ? helperInstallToken(record.helperToken) : null,
     allowlist: Array.isArray(record.allowlist) ? record.allowlist.filter((item) => typeof item === "string") : [],
     cache: Array.isArray(record.cache) ? record.cache as CacheEntry[] : [],
+    guards: readGuards(record.guards),
   };
 }
 
@@ -437,7 +483,7 @@ function forgetTab(tabId: number): void {
 }
 
 function defaultState(): Persisted {
-  return { mode: "normal", helperOrigin: null, helperToken: null, allowlist: [], cache: [] };
+  return { mode: "normal", helperOrigin: null, helperToken: null, allowlist: [], cache: [], guards: DEFAULT_GUARDS };
 }
 
 void bootstrap();
@@ -448,6 +494,7 @@ async function bootstrap(): Promise<void> {
   highMode = state.mode === "high";
   await syncRules();
   await syncBlankGuard();
+  await syncPageGuards();
 }
 
 function failClosed(): NavDecision {
@@ -463,6 +510,15 @@ function failClosed(): NavDecision {
 
 function compact(signal: { id: string; title: string; summary: string }): { id: string; title: string; summary: string } {
   return { id: signal.id, title: signal.title, summary: signal.summary };
+}
+
+function hidePhp(decision: unknown, enabled: boolean): unknown {
+  if (enabled || !decision || typeof decision !== "object") return decision;
+  const record = decision as { popup?: { id?: string }[]; gating?: { id?: string }[] };
+  const strip = <T extends { id?: string }>(list: T[] | undefined) => (
+    Array.isArray(list) ? list.filter((item) => item?.id !== PHP_EXPOSURE_ID) : list
+  );
+  return { ...record, popup: strip(record.popup), gating: strip(record.gating) };
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

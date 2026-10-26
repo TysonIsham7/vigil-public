@@ -55,16 +55,56 @@ describe("scanUrl", () => {
     expect(php?.remediation[0] ?? "").toMatch(/^Upgrade PHP/);
     expect(php?.remediation[1] ?? "").toMatch(/partial mitigation/);
     expect(php?.remediation[0] ?? "").not.toMatch(/session\.upload_progress/);
+    expect(php?.remediation[2] ?? "").toMatch(/CVE-2026-115560/);
+    expect(php?.remediation.join(" ")).not.toMatch(/does not block a deploy or hold a page/);
     expect(owner.report.checks.vulns?.[0]?.mitigation ?? "").toMatch(/^Upgrade PHP/);
+    expect(owner.report.checks.vulns?.[1]?.advisoryId).toBe("PHP-CVE-2026-115560");
+    expect(owner.report.checks.vulns?.[1]?.mitigation ?? "").not.toMatch(/does not block a deploy or hold a page/);
+    expect(owner.report.findings.some((finding) => finding.id === "PHP_CVE_2026_115560")).toBe(false);
     expect(owner.report.checks.vulns?.[0]?.audience).toBe("owner");
     expect(owner.report.summary.byDomain).toHaveLength(11);
     expect(visitor.report.blockDeploy).toBe(false);
     expect(visitor.report.verdict).toBe("warn");
     expect(visitor.report.findings.find((finding) => finding.id === "PHP_CVE_2026_109618")?.recommendationOnly).toBe(true);
+    const exposure = visitor.report.findings.find((finding) => finding.id === "PHP2SHELL_EXPOSURE");
+    expect(exposure?.title).toBe("PHP2Shell: exposed");
+    expect(exposure?.recommendationOnly).toBe(true);
+    expect(exposure?.evidence).toBe("exposed PHP/8.2.34");
     expect(visitor.report.checks.domain?.reputation.every((row) => row.status === "not-configured")).toBe(true);
     const note = owner.report.findings.find((finding) => finding.id === "KERNEL_SHARED_HOST");
     expect(note?.severity).toBe("informational");
     expect(note?.recommendationOnly).toBe(true);
     expect(note?.summary).toMatch(/cannot see the host kernel/);
+  });
+
+  it("notes CVE-2026-115560 on a PHP release that already has the 21 October fixes", async () => {
+    const patched: typeof fetch = async () => new Response(html, {
+      status: 200,
+      headers: {
+        "content-security-policy": "default-src 'self'",
+        "x-powered-by": "PHP/8.5.12",
+      },
+    });
+    const owner = await scanUrl("https://example.com/", {
+      audience: "owner",
+      lookup: async () => ["203.0.113.10"],
+      fetchImpl: patched,
+      now,
+      inspectChain: async () => evaluateCertificateChain(
+        [leaf(), { ...leaf(), subject: "CN=Root", issuer: "CN=Root", selfSigned: true, sanDns: [], spkiSha256: "33".repeat(32) }],
+        { host: "example.com", now, trustedSpki: new Set(["33".repeat(32)]) },
+      ),
+    });
+    expect(owner.report.blockDeploy).toBe(false);
+    expect(owner.report.findings.some((finding) => finding.id === "PHP_CVE_2026_109618")).toBe(false);
+    const note = owner.report.findings.find((finding) => finding.id === "PHP_CVE_2026_115560");
+    expect(note?.recommendationOnly).toBe(true);
+    expect(note?.severity).toBe("informational");
+    expect(note?.summary).toMatch(/8\.5\.12/);
+    expect(note?.summary).toMatch(/has not published a fixed version/);
+    expect(note?.remediation.join(" ")).toMatch(/does not block a deploy or hold a page/);
+    expect(owner.report.findings.find((finding) => finding.id === "PHP2SHELL_EXPOSURE")?.title).toBe("PHP2Shell: patched");
+    expect(owner.report.checks.vulns?.find((row) => row.advisoryId === "PHP-CVE-2026-115560")?.status).toBe("suspected");
+    expect(owner.report.checks.vulns?.find((row) => row.advisoryId === "PHP-CVE-2026-115560")?.mitigation).toMatch(/does not block a deploy or hold a page/);
   });
 });

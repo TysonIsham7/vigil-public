@@ -25,7 +25,7 @@ home-directory paths, IP addresses that identify a person or host, or Apple
 team IDs. Put placeholders in `.env.example` only. The committed Safari team
 id stays the placeholder `XXXXXXXXXX`.
 
-CI runs gitleaks and trufflehog. A pre-commit hook runs `scripts/secret-scan.mjs`.
+CI runs gitleaks and trufflehog. A pre-commit hook runs `scripts/secret-scan.mjs`. `tools/publish-public/publish.sh` scans a sanitized snapshot again before anything can be pushed to the public mirror.
 
 ## Scanner boundaries
 

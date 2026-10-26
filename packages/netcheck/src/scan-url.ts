@@ -15,8 +15,13 @@ import {
   INTEL_VERSION,
   assessSite,
   disabledReputation,
+  PHP2SHELL_RULE,
+  classifyPhpExposure,
   evaluatePhp,
   phpAdvisory,
+  phpSessionAdvisory,
+  phpSessionProgressNote,
+  phpSessionUnfixedLine,
   registrableDomain,
   wordpressReadmeVersion,
   wordpressSignals,
@@ -31,6 +36,7 @@ import {
 } from "./cert.js";
 import type { AddressLookup } from "./fetch.js";
 import { safeFetch } from "./fetch.js";
+import { agentPageFindings, redactInstructionHeaders } from "./agent-page.js";
 import { netFinding } from "./finding.js";
 import { crtShEarliest, lookupDomainAge } from "./rdap.js";
 
@@ -89,7 +95,7 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
     ...(options.lookup ? { lookup: options.lookup } : {}),
   });
   const [certResult, rdap] = await Promise.all([certPromise, rdapPromise]);
-  let html = page.body;
+  const html = page.body;
   const wp = wordpressSignals(html);
   if (wp.present && !wp.version && budget()) {
     try {
@@ -151,21 +157,51 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
       evidence: signal.summary,
     }));
   }
+  const exposure = classifyPhpExposure(stringHeaders(page.headers));
+  extra.push(netFinding({
+    id: PHP2SHELL_RULE,
+    severity: exposure.severity,
+    title: exposure.title,
+    summary: exposure.summary,
+    why: "The class comes from the X-Powered-By and Server headers already on this response. Vigil did not send another request.",
+    remediation: exposure.status === "exposed" || exposure.status === "hidden"
+      ? [phpAdvisory.upgrade, phpAdvisory.mitigation]
+      : ["Those headers do not show an unpatched PHP version."],
+    recommendationOnly: true,
+    category: "vulnerability",
+    confidence: exposure.confidence,
+    evidence: exposure.version ? `${exposure.status} PHP/${exposure.version}` : exposure.status,
+  }));
   if (php.status === "vulnerable" || php.status === "suspected") {
     extra.push(netFinding({
       id: "PHP_CVE_2026_109618",
       severity: php.severity === "informational" ? "high" : php.severity,
       title: php.status === "vulnerable" ? "Upgrade PHP" : "PHP detected without a version",
       summary: php.version
-        ? `Upgrade PHP. PHP ${php.version} is below the fixed release for CVE-2026-109618 and CVE-2026-109619.`
-        : "The response looks like PHP, but no PHP/x.y.z version was disclosed. Upgrade PHP if this server runs it.",
+        ? `Upgrade PHP. PHP ${php.version} is below the fixed release for CVE-2026-109618 and CVE-2026-109619. CVE-2026-115560 still has no patched release.`
+        : "The response looks like PHP, but no PHP/x.y.z version was disclosed. Upgrade PHP if this server runs it. CVE-2026-115560 still has no patched release.",
       why: options.audience === "owner"
         ? "A confirmed vulnerable version on the owner's scan is a critical deploy block. A missing version stays a recommendation."
         : "A visitor scan warns instead of blocking, because the visitor does not control the server.",
-      remediation: [phpAdvisory.upgrade, phpAdvisory.mitigation],
+      remediation: [phpAdvisory.upgrade, phpAdvisory.mitigation, phpSessionUnfixedLine()],
       recommendationOnly: php.recommendationOnly,
       category: "vulnerability",
       confidence: php.version ? "high" : "medium",
+      evidence: php.version ?? "version not disclosed",
+    }));
+  }
+  if (php.status === "fixed") {
+    const note = phpSessionProgressNote(php.version);
+    extra.push(netFinding({
+      id: note.id,
+      severity: "informational",
+      title: note.title,
+      summary: note.summary,
+      why: "The 21 October 2026 PHP releases fix CVE-2026-109618 and CVE-2026-109619. PHP's 23 October note says they do not fix CVE-2026-115560, and no patched release exists yet.",
+      remediation: note.remediation,
+      recommendationOnly: true,
+      category: "vulnerability",
+      confidence: "medium",
       evidence: php.version ?? "version not disclosed",
     }));
   }
@@ -182,6 +218,18 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
       evidence: wp.version ?? "wordpress",
     }));
   }
+  extra.push(...await agentPageFindings({
+    html: page.body,
+    headers: page.headers,
+    budget,
+    origin: finalUrl.origin,
+    fetchExtra: (url) => safeFetch(url, {
+      ...(options.lookup ? { lookup: options.lookup } : {}),
+      fetchImpl,
+      maxBytes: limits.liveResponseBytes,
+      timeoutMs: Math.max(1, limits.wallClockMs - (Date.now() - started)),
+    }),
+  }));
   extra.push(sharedHostFinding());
   if (page.truncated) {
     extra.push(netFinding({
@@ -232,6 +280,18 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
             level: php.level === "ok" ? "ok" as const : php.level === "block" ? "block" as const : php.level === "info" ? "info" as const : "warn" as const,
             mitigation: `${phpAdvisory.upgrade} ${phpAdvisory.mitigation}`,
           }]),
+      ...(php.status === "not-applicable"
+        ? []
+        : [{
+            advisoryId: phpSessionAdvisory.id,
+            cves: [...phpSessionAdvisory.cves],
+            component: "php",
+            ...(php.version ? { detectedVersion: php.version } : {}),
+            status: "suspected" as const,
+            audience: options.audience,
+            level: "info" as const,
+            mitigation: php.status === "fixed" ? phpSessionAdvisory.mitigation : phpSessionUnfixedLine(),
+          }]),
       ...(wp.present
         ? [{
             advisoryId: "WP-FINGERPRINT",
@@ -259,7 +319,7 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
     intelVersion: options.intelVersion ?? INTEL_VERSION,
     extraFindings: filtered,
     checks,
-    headers: flatHeaders(page.headers),
+    headers: flatHeaders(redactInstructionHeaders(page.headers)),
     cookies: headerResult.cookies.map((cookie) => ({
       name: cookie.name,
       secure: cookie.secure,
@@ -278,7 +338,6 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
       : {}),
     fetchImpl,
   });
-  html = "";
   return result;
 }
 

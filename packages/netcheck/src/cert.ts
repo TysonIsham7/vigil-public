@@ -1,8 +1,8 @@
 import { createHash, X509Certificate, type KeyObject } from "node:crypto";
 import tls from "node:tls";
 import { matchDistrust } from "@vigil/intel";
-import { isIpLiteral, type CertCheck, type Finding } from "@vigil/core";
-import { pinAddress, pinnedLookup, systemLookup, type AddressLookup } from "./fetch.js";
+import { isIpLiteral, UrlRejected, type CertCheck, type Finding } from "@vigil/core";
+import { pinAddress, pinnedLookup, systemLookup, type AddressLookup, type PinnedAddress } from "./fetch.js";
 import { netFinding } from "./finding.js";
 
 export interface SctPresence {
@@ -349,6 +349,144 @@ export async function connectCertificateChain(
     socket.on("error", (error) => reject(error));
   });
   return walkPeer(peer);
+}
+
+export interface TlsHandshakeObservation {
+  protocol: string;
+  cipher: string;
+  certs: ParsedCert[];
+}
+
+/**
+ * One ordinary TLS handshake. The minimum version is TLS 1.2, which is what a
+ * current browser offers. The caller supplies the cipher list. This does not
+ * send an HTTP request.
+ */
+export async function observeTlsHandshake(
+  host: string,
+  port: number,
+  caPem: string,
+  ciphers: string,
+  timeoutMs = 10_000,
+  lookup?: AddressLookup,
+): Promise<TlsHandshakeObservation> {
+  const pinned = await pinAddress(host, lookup ?? systemLookup);
+  const result = await openHandshake(pinned, host, port, timeoutMs, {
+    ca: caPem,
+    minVersion: "TLSv1.2",
+    maxVersion: "TLSv1.3",
+    ciphers,
+    alpn: ["h2", "http/1.1"],
+  });
+  return { protocol: result.protocol, cipher: result.cipher, certs: walkPeer(result.peer) };
+}
+
+/**
+ * Ordinary AES-SHA suites that TLS 1.0 and TLS 1.1 can still negotiate.
+ * `@SECLEVEL=0` is required because OpenSSL 3 hides those versions at its
+ * default security level. The string has no export, null, RC4, or DES suites.
+ * The browser-style handshake does not use this list.
+ */
+export const LEGACY_PROTOCOL_CIPHERS = [
+  "ECDHE-ECDSA-AES128-SHA",
+  "ECDHE-RSA-AES128-SHA",
+  "ECDHE-ECDSA-AES256-SHA",
+  "ECDHE-RSA-AES256-SHA",
+  "AES128-SHA",
+  "AES256-SHA",
+].join(":") + "@SECLEVEL=0";
+
+/**
+ * One handshake capped at TLS 1.0 or TLS 1.1. The caller passes an address that
+ * has already been checked. This sends no HTTP request.
+ */
+export async function completeLegacyHandshake(
+  pinned: PinnedAddress,
+  host: string,
+  port: number,
+  version: "TLSv1" | "TLSv1.1",
+  timeoutMs = 5_000,
+): Promise<{ protocol: string; certs: ParsedCert[] }> {
+  const result = await openHandshake(pinned, host, port, timeoutMs, {
+    minVersion: version,
+    maxVersion: version,
+    ciphers: LEGACY_PROTOCOL_CIPHERS,
+    alpn: ["http/1.1"],
+  });
+  return { protocol: result.protocol, certs: walkPeer(result.peer) };
+}
+
+/** TLS 1.0 and TLS 1.1 support checks. A refused version is not a finding. A private address is refused before the socket. */
+export async function probeLegacyProtocols(
+  host: string,
+  port: number,
+  timeoutMs = 5_000,
+  lookup?: AddressLookup,
+): Promise<{ protocols: string[]; certs: ParsedCert[] }> {
+  const pinned = await pinAddress(host, lookup ?? systemLookup);
+  const protocols: string[] = [];
+  let certs: ParsedCert[] = [];
+  for (const version of ["TLSv1", "TLSv1.1"] as const) {
+    try {
+      const result = await completeLegacyHandshake(pinned, host, port, version, timeoutMs);
+      if (result.protocol === version || result.protocol === "TLSv1.0") {
+        protocols.push(result.protocol === "TLSv1.0" ? "TLSv1" : result.protocol);
+      }
+      if (certs.length === 0) certs = result.certs;
+    } catch (error) {
+      if (error instanceof UrlRejected) throw error;
+    }
+  }
+  return { protocols, certs };
+}
+
+function openHandshake(
+  pinned: PinnedAddress,
+  host: string,
+  port: number,
+  timeoutMs: number,
+  options: {
+    ca?: string;
+    minVersion?: tls.SecureVersion;
+    maxVersion?: tls.SecureVersion;
+    ciphers?: string;
+    alpn?: string[];
+  },
+): Promise<{ protocol: string; cipher: string; peer: tls.PeerCertificate }> {
+  const servername = isIpLiteral(host) ? undefined : host;
+  return new Promise((resolve, reject) => {
+    const socket = tls.connect({
+      host: pinned.address,
+      port,
+      servername,
+      ...(options.ca ? { ca: options.ca } : {}),
+      rejectUnauthorized: false,
+      ...(options.alpn ? { ALPNProtocols: options.alpn } : {}),
+      ...(options.minVersion ? { minVersion: options.minVersion } : {}),
+      ...(options.maxVersion ? { maxVersion: options.maxVersion } : {}),
+      ...(options.ciphers ? { ciphers: options.ciphers } : {}),
+      lookup: pinnedLookup(pinned) as tls.ConnectionOptions["lookup"],
+    }, () => {
+      try {
+        const protocol = socket.getProtocol() ?? "";
+        const selected = socket.getCipher();
+        const certificate = socket.getPeerCertificate(true);
+        socket.end();
+        const cipher = selected.standardName || selected.name;
+        if (!protocol || !cipher) reject(new Error("TLS handshake did not complete"));
+        else if (!certificate.raw) reject(new Error("TLS peer did not present a certificate"));
+        else resolve({ protocol, cipher, peer: certificate });
+      } catch (error) {
+        socket.destroy();
+        reject(error instanceof Error ? error : new Error("TLS inspection failed"));
+      }
+    });
+    socket.setTimeout(timeoutMs, () => {
+      socket.destroy();
+      reject(new Error("TLS connection timed out"));
+    });
+    socket.on("error", (error) => reject(error));
+  });
 }
 
 interface PeerNode {

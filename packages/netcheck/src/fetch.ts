@@ -62,7 +62,11 @@ export interface SafeResponse {
   status: number;
   headers: Record<string, string | string[]>;
   body: string;
+  /** Present when `binary` is set. The bytes are not decoded as text. */
+  bytes?: Uint8Array;
   truncated: boolean;
+  /** Milliseconds until the response headers. The body download is not included. */
+  ttfbMs: number;
 }
 
 export type PinnedRequest = (
@@ -82,6 +86,8 @@ export async function safeFetch(
     timeoutMs?: number;
     headers?: Record<string, string>;
     signal?: AbortSignal;
+    /** Keep the body as bytes. Text mode is unchanged when this is omitted. */
+    binary?: boolean;
   } = {},
 ): Promise<SafeResponse> {
   const lookup = options.lookup ?? systemLookup;
@@ -94,9 +100,11 @@ export async function safeFetch(
   for (let hop = 0; hop <= maxRedirects; hop++) {
     const signal = combinedSignal(options.timeoutMs ?? DEFAULT_LIMITS.wallClockMs, options.signal);
     const headers = { "user-agent": "vigil/2.0", ...(options.headers ?? {}) };
+    const headerStart = Date.now();
     const response = fetchImpl
       ? await fetchImpl(current.toString(), { redirect: "manual", headers, signal })
       : await requestImpl(current, pinned, { headers, signal });
+    const ttfbMs = Math.max(0, Date.now() - headerStart);
     const location = response.headers.get("location");
     if (response.status >= 300 && response.status < 400 && location) {
       await response.body?.cancel().catch(() => undefined);
@@ -105,13 +113,15 @@ export async function safeFetch(
       pinned = await pinAddress(current.hostname, lookup);
       continue;
     }
-    const collected = await readCapped(response, maxBytes);
+    const collected = await readCappedBytes(response, maxBytes);
     return {
       url: current.toString(),
       status: response.status,
       headers: headerRecord(response.headers),
-      body: collected.body,
+      body: options.binary ? "" : new TextDecoder("utf-8", { fatal: false }).decode(collected.bytes),
+      ...(options.binary ? { bytes: collected.bytes } : {}),
       truncated: collected.truncated,
+      ttfbMs,
     };
   }
   throw new UrlRejected("Too many redirects");
@@ -123,8 +133,20 @@ function combinedSignal(timeoutMs: number, outer?: AbortSignal): AbortSignal {
   return AbortSignal.any(signals);
 }
 
-function nodePinnedFetch(url: URL, pinned: PinnedAddress, init: { headers: Record<string, string>; signal: AbortSignal }): Promise<Response> {
+/** Resolves when the response headers arrive. The body stays a stream so the caller can time it separately. */
+export function nodePinnedFetch(url: URL, pinned: PinnedAddress, init: { headers: Record<string, string>; signal: AbortSignal }): Promise<Response> {
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const fail = (error: unknown) => {
+      if (settled) return;
+      settled = true;
+      reject(error instanceof Error ? error : new Error("request failed"));
+    };
+    const succeed = (response: Response) => {
+      if (settled) return;
+      settled = true;
+      resolve(response);
+    };
     const secure = url.protocol === "https:";
     const lib = secure ? https : http;
     const hostname = url.hostname.replace(/^\[|\]$/g, "");
@@ -138,27 +160,48 @@ function nodePinnedFetch(url: URL, pinned: PinnedAddress, init: { headers: Recor
       lookup: pinnedLookup(pinned) as https.RequestOptions["lookup"],
       rejectUnauthorized: true,
     }, (incoming) => {
-      const chunks: Buffer[] = [];
-      incoming.on("data", (chunk: Buffer) => chunks.push(chunk));
-      incoming.on("error", reject);
-      incoming.on("end", () => {
-        const headers = new Headers();
-        for (const [key, value] of Object.entries(incoming.headers)) {
-          if (value === undefined) continue;
-          const list = Array.isArray(value) ? value : [value];
-          for (const item of list) headers.append(key, item);
-        }
-        resolve(new Response(Buffer.concat(chunks), { status: incoming.statusCode ?? 0, headers }));
+      const headers = new Headers();
+      for (const [key, value] of Object.entries(incoming.headers)) {
+        if (value === undefined) continue;
+        const list = Array.isArray(value) ? value : [value];
+        for (const item of list) headers.append(key, item);
+      }
+      let closed = false;
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          incoming.on("data", (chunk: Buffer | string) => {
+            if (closed) return;
+            const bytes = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
+            const copy = new Uint8Array(bytes.byteLength);
+            copy.set(bytes);
+            controller.enqueue(copy);
+          });
+          incoming.on("end", () => {
+            if (closed) return;
+            closed = true;
+            controller.close();
+          });
+          incoming.on("error", (error) => {
+            if (closed) return;
+            closed = true;
+            controller.error(error);
+          });
+        },
+        cancel() {
+          closed = true;
+          incoming.destroy();
+        },
       });
+      succeed(new Response(body, { status: incoming.statusCode ?? 0, headers }));
     });
     const abort = () => req.destroy(init.signal.reason instanceof Error ? init.signal.reason : new DOMException("aborted", "AbortError"));
     if (init.signal.aborted) {
       abort();
-      reject(init.signal.reason instanceof Error ? init.signal.reason : new DOMException("aborted", "AbortError"));
+      fail(init.signal.reason instanceof Error ? init.signal.reason : new DOMException("aborted", "AbortError"));
       return;
     }
     init.signal.addEventListener("abort", abort, { once: true });
-    req.on("error", reject);
+    req.on("error", fail);
     req.end();
   });
 }
@@ -179,13 +222,12 @@ function headerRecord(headers: Headers): Record<string, string | string[]> {
   return out;
 }
 
-async function readCapped(response: Response, maxBytes: number): Promise<{ body: string; truncated: boolean }> {
+async function readCappedBytes(response: Response, maxBytes: number): Promise<{ bytes: Uint8Array; truncated: boolean }> {
   const reader = response.body?.getReader();
   if (!reader) {
-    const text = await response.text();
-    const encoded = new TextEncoder().encode(text);
-    if (encoded.byteLength <= maxBytes) return { body: text, truncated: false };
-    return { body: new TextDecoder().decode(encoded.slice(0, maxBytes)), truncated: true };
+    const encoded = new Uint8Array(await response.arrayBuffer());
+    if (encoded.byteLength <= maxBytes) return { bytes: encoded, truncated: false };
+    return { bytes: encoded.slice(0, maxBytes), truncated: true };
   }
   const chunks: Uint8Array[] = [];
   let size = 0;
@@ -210,5 +252,5 @@ async function readCapped(response: Response, maxBytes: number): Promise<{ body:
     merged.set(chunk, offset);
     offset += chunk.byteLength;
   }
-  return { body: new TextDecoder("utf-8", { fatal: false }).decode(merged), truncated };
+  return { bytes: merged, truncated };
 }

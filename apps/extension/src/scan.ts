@@ -9,6 +9,7 @@ import {
 } from "@vigil/core";
 import { assessSite } from "@vigil/intel/lookalike";
 import { INTEL_VERSION } from "@vigil/intel/version";
+import { omitPhpExposure } from "./guard-settings.js";
 import { requestChromeNativeVerdict, type ChromeNativeRuntime } from "./chrome-host.js";
 import { NATIVE_ATTEMPT_MS, isGateSignal, requestNativeVerdict, type NativeRuntime } from "./native.js";
 
@@ -44,7 +45,9 @@ export async function runHoldScan(input: {
   hardTimeoutMs?: number;
   nativeRuntime?: NativeRuntime;
   chromeNative?: ChromeNativeRuntime;
+  includePhpExposure?: boolean;
 }): Promise<NavDecision> {
+  const seen = (signals: GateSignal[]) => omitPhpExposure(signals, input.includePhpExposure !== false);
   const local = localSignals(input.host);
   const origin = input.helperOrigin ? loopbackHelperOrigin(input.helperOrigin) : null;
   const token = input.helperToken ? helperInstallToken(input.helperToken) : null;
@@ -58,7 +61,7 @@ export async function runHoldScan(input: {
   const started = input.startedAt ?? Date.now();
   const remaining = () => hardTimeoutMs - (Date.now() - started);
   if (remaining() <= 0) {
-    return planAfter({ ...base, signals: local, timedOut: true, coverage: "full" });
+    return planAfter({ ...base, signals: seen(local), timedOut: true, coverage: "full" });
   }
   let nativeStatus: "unavailable" | "timeout" = "unavailable";
   if (input.chromeNative) {
@@ -68,7 +71,7 @@ export async function runHoldScan(input: {
       timeoutMs: Math.max(0, remaining()),
     });
     if (chrome.status === "ok") {
-      return planAfter({ ...base, signals: merge(chrome.signals, local), timedOut: false, coverage: "full" });
+      return planAfter({ ...base, signals: seen(merge(chrome.signals, local)), timedOut: false, coverage: "full" });
     }
     if (chrome.status === "disconnected") return helperDisconnected(input.mode, local);
     nativeStatus = chrome.status;
@@ -81,19 +84,19 @@ export async function runHoldScan(input: {
       timeoutMs: nativeBudget,
     });
     if (native.status === "ok") {
-      return planAfter({ ...base, signals: merge(native.signals, local), timedOut: false, coverage: "full" });
+      return planAfter({ ...base, signals: seen(merge(native.signals, local)), timedOut: false, coverage: "full" });
     }
     if (native.status === "timeout") nativeStatus = "timeout";
   }
   const left = remaining();
   if (left <= 0 || (nativeStatus === "timeout" && !origin)) {
-    return planAfter({ ...base, signals: local, timedOut: true, coverage: "full" });
+    return planAfter({ ...base, signals: seen(local), timedOut: true, coverage: "full" });
   }
   if (!origin) {
-    return planAfter({ ...base, signals: local, timedOut: false, coverage: "local" });
+    return planAfter({ ...base, signals: seen(local), timedOut: false, coverage: "local" });
   }
   if (!token) {
-    return { ...planAfter({ ...base, signals: local, timedOut: true, coverage: "full" }), helper: "up" };
+    return { ...planAfter({ ...base, signals: seen(local), timedOut: true, coverage: "full" }), helper: "up" };
   }
   return helperVerdict({
     base,
@@ -101,6 +104,7 @@ export async function runHoldScan(input: {
     local,
     token,
     timeoutMs: left,
+    includePhpExposure: input.includePhpExposure !== false,
     ...(input.fetchImpl ? { fetchImpl: input.fetchImpl } : {}),
   });
 }
@@ -133,6 +137,7 @@ async function helperVerdict(input: {
   local: GateSignal[];
   token: string;
   timeoutMs: number;
+  includePhpExposure: boolean;
   fetchImpl?: typeof fetch;
 }): Promise<NavDecision> {
   const controller = new AbortController();
@@ -161,7 +166,7 @@ async function helperVerdict(input: {
     const body = await response.json() as { host?: unknown; signals?: unknown };
     if (body.host !== input.base.host || !Array.isArray(body.signals)) return holdOnHelper(input.base, input.local, "up");
     const remote = body.signals.filter(isGateSignal);
-    return { ...planAfter({ ...input.base, signals: merge(remote, input.local), timedOut: false, coverage: "full" }), helper: "up" };
+    return { ...planAfter({ ...input.base, signals: omitPhpExposure(merge(remote, input.local), input.includePhpExposure), timedOut: false, coverage: "full" }), helper: "up" };
   } catch (error) {
     const name = error instanceof Error ? error.name : "";
     const timedOut = name === "AbortError" || name === "TimeoutError";

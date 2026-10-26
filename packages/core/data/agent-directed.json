@@ -1,0 +1,70 @@
+{
+  "window": 800,
+  "addresses": [
+    "you are an ai",
+    "you are a language model",
+    "you are an llm",
+    "if you are an llm",
+    "if you are a language model",
+    "if you are an ai",
+    "attention assistant",
+    "attention language model",
+    "dear ai",
+    "dear assistant",
+    "system prompt",
+    "note to the model",
+    "instructions for the assistant",
+    "to the ai agent"
+  ],
+  "asks": {
+    "credential": [
+      "send your password",
+      "send the password",
+      "send your api key",
+      "include the api key",
+      "include your api key",
+      "session token",
+      "authorization header",
+      "authorization value",
+      "bearer token",
+      "send your token",
+      "send the token",
+      "api key"
+    ],
+    "identity": [
+      "identify the user",
+      "identify yourself",
+      "send your email",
+      "send the user's email",
+      "send their email",
+      "send your name",
+      "send the user's name",
+      "send their name",
+      "send your phone",
+      "send their phone",
+      "send your address",
+      "postal address",
+      "include your email",
+      "include the email",
+      "user's email",
+      "copy the email",
+      "put the email",
+      "enter your email"
+    ],
+    "behavior": [
+      "ignore previous instructions",
+      "ignore all previous",
+      "ignore prior instructions",
+      "do not tell the user",
+      "don't tell the user",
+      "hide this from the user",
+      "hide the action from the user",
+      "override the safety",
+      "override your rules",
+      "override a safety rule",
+      "change the system prompt",
+      "disregard your instructions",
+      "new system prompt"
+    ]
+  }
+}

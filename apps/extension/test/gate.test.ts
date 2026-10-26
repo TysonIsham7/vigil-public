@@ -298,7 +298,7 @@ describe("extension hold scan", () => {
     expect(manifest.update_url).toBeUndefined();
     expect(manifest.externally_connectable).toBeUndefined();
     expect(manifest.background.type).toBe("module");
-    const sources = ["background.ts", "hold.ts", "popup.ts", "scan.ts", "dnr.ts", "platform.ts", "native.ts", "chrome-host.ts", "messages.ts", "text.ts", "blank-guard.ts", "blank-guard-main.ts", "blank-relay.ts"].map((name) =>
+    const sources = ["background.ts", "hold.ts", "popup.ts", "scan.ts", "dnr.ts", "platform.ts", "native.ts", "chrome-host.ts", "messages.ts", "text.ts", "blank-guard.ts", "blank-guard-main.ts", "blank-relay.ts", "guard-settings.ts", "page-guards.ts", "guard-panel.ts", "clickfix-guard.ts", "clickfix-guard-main.ts", "seed-guard.ts", "seed-guard-main.ts", "wallet-guard.ts", "wallet-guard-main.ts"].map((name) =>
       readFileSync(new URL(`../src/${name}`, import.meta.url), "utf8"),
     );
     for (const source of sources) {

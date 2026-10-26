@@ -1,6 +1,6 @@
-import { assessKernel, curlAdvisory, curlAffected, goAdvisory, goMissingTrustFix, kernelAdvisory, litellmAdvisory, nodeAdvisory, nodeMissingSecurityRelease } from "@vigil/intel";
+import { assessKernel, curlAdvisory, curlAffected, goAdvisory, goMissingTrustFix, kernelAdvisory, litellmAdvisory, nginxAdvisory, nginxMissingSecurityRelease, nodeAdvisory, nodeMissingSecurityRelease, pipAdvisory, pipMissingCertifiFix, uvMissingCertifiFix } from "@vigil/intel";
 import type { Finding } from "@vigil/core";
-import { parseDockerImages, type ImageRef } from "./deps.js";
+import { dockerImageName, parseDockerImages, type ImageRef } from "./deps.js";
 import { netFinding } from "./finding.js";
 import { distrustedInBundle, type TrustBundle } from "./truststore.js";
 
@@ -14,6 +14,9 @@ export function assessToolchain(input: {
   nodeVersion?: string | null;
   curlVersion?: string | null;
   goVersion?: string | null;
+  nginxVersion?: string | null;
+  pipVersion?: string | null;
+  uvVersion?: string | null;
   kernelRelease?: string | null;
   kernelOs?: string | null;
   trustBundles?: TrustBundle[];
@@ -52,6 +55,22 @@ export function assessToolchain(input: {
       evidence: curl,
     }));
   }
+  const nginxRaw = input.nginxVersion ?? "";
+  const nginx = nginxRaw ? versionToken(nginxRaw) : undefined;
+  if (nginxRaw && nginxMissingSecurityRelease(nginxRaw)) {
+    findings.push(netFinding({
+      id: "TOOLCHAIN_NGINX",
+      severity: "high",
+      title: "Local nginx is below the 14 October 2026 security release",
+      summary: `nginx ${nginx ?? nginxRaw} is inside the range fixed by 1.31.7 on the mainline and 1.30.6 on the 1.30 line.`,
+      why: "Those releases fix five medium worker issues, including a buffer overflow, HTTP/3 request-body injection, and TLS session-ticket forgery. This is a report about the machine running vigil doctor. It does not probe a remote server and it does not block a deploy.",
+      remediation: [nginxAdvisory.remediation],
+      recommendationOnly: true,
+      category: "toolchain",
+      file: "(local)",
+      evidence: nginx ?? nginxRaw,
+    }));
+  }
   const go = input.goVersion ? versionToken(input.goVersion) : undefined;
   if (go && goMissingTrustFix(go)) {
     findings.push(netFinding({
@@ -67,6 +86,36 @@ export function assessToolchain(input: {
       evidence: go,
     }));
   }
+  const pip = input.pipVersion ? versionToken(input.pipVersion) : undefined;
+  if (pip && pipMissingCertifiFix(pip)) {
+    findings.push(netFinding({
+      id: "TOOLCHAIN_PIP",
+      severity: "high",
+      title: "Local pip still vendors a pre-eMudhra certifi",
+      summary: `pip ${pip} is older than ${pipAdvisory.pipFixed}. It keeps trusting the compromised intermediates from its own certifi copy.`,
+      why: "pip loads that vendored bundle in addition to the system trust store. Removing the keys from ca-certificates does not update it. This is a report about the machine running vigil doctor. It does not block a deploy.",
+      remediation: [pipAdvisory.remediation],
+      recommendationOnly: true,
+      category: "toolchain",
+      file: "(local)",
+      evidence: pip,
+    }));
+  }
+  const uv = input.uvVersion ? versionToken(input.uvVersion) : undefined;
+  if (uv && uvMissingCertifiFix(uv)) {
+    findings.push(netFinding({
+      id: "TOOLCHAIN_UV",
+      severity: "high",
+      title: "Local uv is below the eMudhra certifi update",
+      summary: `uv ${uv} is older than ${pipAdvisory.uvFixed}.`,
+      why: "That release is the one that picked up certifi 2026.10.19. This is a report about the machine running vigil doctor. It does not block a deploy.",
+      remediation: [pipAdvisory.remediation],
+      recommendationOnly: true,
+      category: "toolchain",
+      file: "(local)",
+      evidence: uv,
+    }));
+  }
   if (input.kernelRelease && isLinux(input.kernelOs)) {
     const kernel = kernelFinding(input.kernelRelease);
     if (kernel) findings.push(kernel);
@@ -76,14 +125,16 @@ export function assessToolchain(input: {
     const tag = versionToken(image.tag) ?? image.tag;
     const curlImage = /curl/i.test(image.image) && tag && curlAffected(tag);
     const goImage = /golang|^go(?::|\/)/i.test(image.image) && tag && goMissingTrustFix(tag);
-    if (curlImage || goImage) {
+    const nginxImage = isNginxImage(image.image) && nginxMissingSecurityRelease(image.tag);
+    if (curlImage || goImage || nginxImage) {
+      const kind = curlImage ? "a curl" : goImage ? "a Go" : "an nginx";
       findings.push(netFinding({
         id: "TOOLCHAIN_IMAGE",
         severity: "high",
         title: "Container base image is missing a toolchain fix",
-        summary: `${image.image} matches a curl or Go advisory range.`,
+        summary: `${image.image} matches ${kind} advisory range.`,
         why: "Doctor reports the image. It does not build or run it.",
-        remediation: [curlImage ? curlAdvisory.remediation : goAdvisory.remediation],
+        remediation: [curlImage ? curlAdvisory.remediation : goImage ? goAdvisory.remediation : nginxAdvisory.remediation],
         recommendationOnly: true,
         category: "toolchain",
         file: image.source,
@@ -162,7 +213,7 @@ export function trustStoreFindings(bundles: TrustBundle[]): Finding[] {
       severity: "high",
       title: `${bundle.label} still trusts an eMudhra key`,
       summary: `${bundle.label} contains ${hits.map((hit) => hit.name).join(", ")}.`,
-      why: "These are the compromised eMudhra intermediates or emSign ECC Root CA - G3. Clients that use this store can still accept a certificate those keys sign. Record-only roots are not reported. Go applies its own filter only in 1.27.3 or newer, and in 1.26.10 or newer on the 1.26 line. ca-certificates, certifi, and Node do not get that filter from a Go upgrade.",
+      why: "These are the compromised eMudhra intermediates or emSign ECC Root CA - G3. Clients that use this store can still accept a certificate those keys sign. Record-only roots are not reported. Go applies its own filter only in 1.27.3 or newer, and in 1.26.10 or newer on the 1.26 line. ca-certificates, certifi, and Node do not get that filter from a Go upgrade. This read does not see the certifi copy vendored inside an older pip.",
       remediation: [
         "Update this trust store so the distrusted keys are gone.",
         goAdvisory.remediation,
@@ -174,6 +225,11 @@ export function trustStoreFindings(bundles: TrustBundle[]): Finding[] {
     }));
   }
   return findings;
+}
+
+function isNginxImage(image: string): boolean {
+  const name = dockerImageName(image);
+  return name === "nginx" || name === "nginx-unprivileged";
 }
 
 function isLinux(kernelOs: string | null | undefined): boolean {

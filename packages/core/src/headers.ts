@@ -50,7 +50,7 @@ export function parseCookieFlags(raw: string): CookieFlag {
 
 export function headerFindings(pageUrl: string, headers: HeaderMap): { findings: Finding[]; cookies: CookieFlag[] } {
   const findings: Finding[] = [];
-  let scheme = "https:";
+  let scheme: string;
   try {
     scheme = new URL(pageUrl).protocol;
   } catch {

@@ -1,0 +1,21 @@
+# Copy to .publish-public.local.yml at the root of the private repo.
+# Do not commit that copy. Replace each REPLACE_ value with the real string.
+# This file is merged into .publish-public.yml and is never published.
+
+replacements:
+  - from: "REPLACE_APPLE_TEAM_ID"
+    to: "XXXXXXXXXX"
+  - from: "REPLACE_BUNDLE_ID"
+    to: "com.example.app"
+  - from: "REPLACE_MAC_HOSTNAME"
+    to: "mac.example"
+  - from: "REPLACE_USERNAME"
+    to: "example"
+  - from: "REPLACE_HOME"
+    to: "/Users/example"
+  - from: "REPLACE_EMAIL"
+    to: "user@example.com"
+  - from: "REPLACE_DEVICE_MODEL"
+    to: "iPhone"
+  - from: "REPLACE_BUSINESS_NAME"
+    to: "Example Company"

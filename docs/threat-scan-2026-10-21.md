@@ -30,7 +30,7 @@ The Mozilla article URL returned 403 to the fetcher. The publication, the date, 
 - Source: [oss-security report](https://www.openwall.com/lists/oss-security/2026/10/20/1)
 - Go: [oss-security CVE-2026-111943](https://www.openwall.com/lists/oss-security/2026/10/20/29)
 
-**Coverage: covered for TLS impersonation by these keys.** `packages/intel/data/distrusted-cas.json` (version `2026.10.21`) block-lists the eight intermediates by SPKI, including the Sectigo cross-signs, and block-lists emSign ECC Root CA - G3. emSign Root TLS CA - G3, emSign Root CS CA - G3, and AAA Certificate Services stay record-only, which matches the "do not blanket-distrust the parent" guidance. Chrome, the native host, and `vigil serve` all treat a block-listed SPKI as `CERT_DISTRUSTED_CA` and High Security holds. Safari and iOS add the same blocklist on top of `SecTrust`. `vigil doctor` reports the keys if they remain in ca-certificates, certifi, or Node's bundled roots (`TRUSTSTORE_EMUDHRA`), and it reports a local Go older than 1.27.3 or 1.26.10 (`TOOLCHAIN_GO`).
+**Coverage: covered for TLS impersonation by these keys.** `packages/intel/data/distrusted-cas.json` (version `2026.10.21`) block-lists the eight intermediates by SPKI, including the Sectigo cross-signs, and block-lists emSign ECC Root CA - G3. emSign Root TLS CA - G3, emSign Root CS CA - G3, and AAA Certificate Services stay record-only, which matches the "do not blanket-distrust the parent" guidance. Chrome, the native host, and `vigil serve` all treat a block-listed SPKI as `CERT_DISTRUSTED_CA` and High Security holds. Safari and iOS add the same blocklist on top of `SecTrust`. `vigil doctor` reports the keys if they remain in ca-certificates, certifi, or Node's bundled roots (`TRUSTSTORE_EMUDHRA`), and it reports a local Go older than 1.27.3 or 1.26.10 (`TOOLCHAIN_GO`). `vigil trust-audit` probes Node, and curl, git, and python3 urllib when they are on `PATH`, plus nscurl on macOS, against the DV, OV, and EV G3B and G3C test hosts. A TLS error is blocked. A completed handshake is exposed. A timeout is unknown. On macOS it reads `security dump-trust-settings` for the user and admin domains and prints Never Trust advice. It does not change trust settings. `vigil doctor` includes the same check (`TRUST_AUDIT_EXPOSED`, `TRUST_AUDIT_UNKNOWN`).
 
 **Suggested check.** No new visitor block before publish. Two maintenance items:
 
@@ -188,13 +188,13 @@ CISA's ATT&CK page for T1204.004, last modified 12 May 2026, is the definition o
 
 **Coverage: partial.** Lookalikes, homoglyphs, mixed script, a login on a domain younger than seven days, and credential forms posted to another origin or to HTTP are already hold signals. The brand list is sixteen marks (Google, Apple, Microsoft, Amazon, PayPal, Facebook, Instagram, Netflix, GitHub, Coinbase, Binance, Dropbox, Adobe, LinkedIn, Chase, Wells Fargo). Toll, postal, healthcare, and local-government lures from the October report are absent. An aged hijacked tenant will not trip the age check. A kit that withholds the form unless script runs will not trip the credential check.
 
-**Suggested check.** Extend the brand table with stable registrable domains for the lure categories named in the 14 October report. Keep TLD, free-hosting, and subdomain-depth signals in the popup. Do not add a ClickFix command parser, and do not execute the page to get past a CAPTCHA. An adversary-in-the-middle kit on a lookalike host is already in range of the certificate and lookalike checks. A kit on the real domain is the device-code case above.
+**Suggested check.** Extend the brand table with stable registrable domains for the lure categories named in the 14 October report. Keep TLD, free-hosting, and subdomain-depth signals in the popup. The Chrome extension now classifies clipboard writes locally and holds a shell or Run-dialog command before the paste. Do not execute the page to get past a CAPTCHA. An adversary-in-the-middle kit on a lookalike host is already in range of the certificate and lookalike checks. A kit on the real domain is the device-code case above.
 
 **README.** These sentences belong in "what Vigil doesn't fix":
 
 - Reputation feeds are off. A static brand table misses kits on the real domain and kits on an aged or hijacked tenant.
 - Vigil does not run page script. A credential form that appears only after JavaScript or a CAPTCHA is not visible.
-- Vigil does not stop a person from pasting a command into the operating system.
+- A command shown as text or a picture, or typed by hand, is still outside the clipboard hook.
 
 ## 10. CISA KEV around this date
 
@@ -227,7 +227,7 @@ Add a "what Vigil doesn't fix" section. These items belong in it:
 4. A Node upgrade. The helper is only as safe as the Node that starts it.
 5. Live CRLSet, OneCRL, and CRLite. The eMudhra file is a snapshot.
 6. Chrome Certificate Transparency policy. SCT bytes are counted. Signatures, log operators, and per-root cutoffs are not enforced. Chrome root-store removals that Mozilla still trusts are not mirrored automatically.
-7. Device-code phishing on the real identity provider, ClickFix paste prompts, and pages that reveal a credential form only after script or a CAPTCHA.
+7. Device-code phishing on the real identity provider, a ClickFix command that is shown rather than copied by the page, and pages that reveal a credential form only after script or a CAPTCHA.
 8. Safe Browsing, PhishTank, and any other live reputation feed. Those lookups stay off.
 9. KEV bugs in appliances and other software a page fetch cannot see.
 10. The host kernel behind a site. `KERNEL_SHARED_HOST` already states this.

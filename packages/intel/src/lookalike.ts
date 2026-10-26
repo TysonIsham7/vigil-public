@@ -162,7 +162,7 @@ function credential(html: string, pageUrl: string, registrable: string): {
   const present = password || otp || card;
   const action = /<form\b[^>]*\baction\s*=\s*['"]([^'"]+)['"]/i.exec(html)?.[1];
   let crossOrigin = false;
-  let insecure = false;
+  let insecure: boolean;
   try {
     const page = new URL(pageUrl);
     insecure = page.protocol === "http:";

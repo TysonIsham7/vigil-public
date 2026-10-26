@@ -5,6 +5,9 @@
   "type": "module",
   "description": "Pure TypeScript scan rules and report schema. No Node or DOM dependencies.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./clickfix": "./src/guards/clickfix.ts",
+    "./seed-phrase": "./src/guards/seed-phrase.ts",
+    "./wallet-request": "./src/guards/wallet-request.ts"
   }
 }

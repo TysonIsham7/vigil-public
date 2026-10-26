@@ -1,0 +1,19 @@
+# Copy to .publish-public.denylist at the root of the private repo.
+# Do not commit that copy. The secrets list itself must stay untracked.
+#
+# A line starting with "regex " is an extended regular expression.
+# A line starting with "literal " is an exact string.
+# Any other non-comment line is an exact string.
+# Rules shorter than 4 characters are rejected.
+#
+# Add the real team ID, Mac hostname, username, home path, email addresses,
+# device model, and business name here as literals, one per line.
+# The shape rules below are examples. Fixture and test paths can be ignored
+# with denylist_allow in .publish-public.yml.
+
+regex vg_live_[A-Za-z0-9_-]{8,}
+regex AKIA[0-9A-Z]{16}
+regex ghp_[A-Za-z0-9]{20,}
+regex github_pat_[A-Za-z0-9_]{20,}
+regex sk_live_[A-Za-z0-9]{8,}
+regex -----BEGIN [A-Z0-9 ]*PRIVATE KEY-----

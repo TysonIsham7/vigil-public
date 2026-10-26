@@ -1,4 +1,4 @@
-import { isCompromisedLitellm, litellmImage } from "@vigil/intel";
+import { isCompromisedAxios, isCompromisedLitellm, isVulnerableMcpSdk, litellmImage } from "@vigil/intel";
 import type { DepCheck, Finding } from "@vigil/core";
 import { netFinding } from "./finding.js";
 
@@ -20,7 +20,7 @@ export function parseDependencies(files: { name: string; content: string }[]): P
   const refs: PackageRef[] = [];
   for (const file of files) {
     const base = file.name.split("/").pop() ?? file.name;
-    if (base === "package-lock.json") refs.push(...npmLock(file));
+    if (base === "package-lock.json" || base === "npm-shrinkwrap.json") refs.push(...npmLock(file));
     else if (base === "pnpm-lock.yaml") refs.push(...pnpmLock(file));
     else if (base === "yarn.lock") refs.push(...yarnLock(file));
     else if (/^requirements.*\.txt$/i.test(base)) refs.push(...requirements(file));
@@ -32,6 +32,28 @@ export function parseDependencies(files: { name: string; content: string }[]): P
   return dedupe(refs);
 }
 
+/**
+ * Repository name from an image reference.
+ * Strip a digest, then remove `:tag` only when the colon is in the last path segment.
+ * `localhost:5000/nginx:1.31.6` is `nginx`. `nginx:1.31.6@sha256:…` is `nginx`.
+ */
+export function dockerImageName(ref: string): string {
+  const withoutDigest = ref.split("@")[0] ?? ref;
+  const slash = withoutDigest.lastIndexOf("/");
+  const last = slash >= 0 ? withoutDigest.slice(slash + 1) : withoutDigest;
+  const colon = last.indexOf(":");
+  return (colon >= 0 ? last.slice(0, colon) : last).toLowerCase();
+}
+
+/** Tag from the same split. Empty when the reference has no tag. */
+export function dockerImageTag(ref: string): string {
+  const withoutDigest = ref.split("@")[0] ?? ref;
+  const slash = withoutDigest.lastIndexOf("/");
+  const last = slash >= 0 ? withoutDigest.slice(slash + 1) : withoutDigest;
+  const colon = last.indexOf(":");
+  return colon >= 0 ? last.slice(colon + 1) : "";
+}
+
 export function parseDockerImages(name: string, content: string): ImageRef[] {
   const images: ImageRef[] = [];
   const lines = content.split("\n");
@@ -39,8 +61,7 @@ export function parseDockerImages(name: string, content: string): ImageRef[] {
     const match = /^\s*FROM\s+([^\s]+)/i.exec(lines[index] ?? "");
     const image = match?.[1];
     if (!image || image.toLowerCase() === "scratch") continue;
-    const tag = image.includes(":") ? (image.split(":").pop()?.split("@")[0] ?? "") : "";
-    images.push({ image, tag, source: name, line: index + 1 });
+    images.push({ image, tag: dockerImageTag(image), source: name, line: index + 1 });
   }
   return images;
 }
@@ -116,6 +137,54 @@ export function dependencyFindings(packages: PackageRef[], osv: { hits: OsvHit[]
       summary: "Exact match for the compromised LiteLLM 1.107.0 release.",
     });
   }
+  for (const pkg of packages) {
+    if (!isCompromisedAxios(pkg.name, pkg.version)) continue;
+    findings.push(netFinding({
+      id: "DEP_AXIOS_COMPROMISED",
+      severity: "critical",
+      title: "Compromised axios npm release",
+      summary: `${pkg.source} pins ${pkg.name} ${pkg.version}.`,
+      why: "axios 1.14.1 and 0.30.4, and plain-crypto-js 4.2.0 and 4.2.1, were malicious npm releases. The axios versions pulled in a postinstall dropper.",
+      remediation: ["Remove the pinned release and use an axios version that was not part of that incident."],
+      recommendationOnly: false,
+      category: "dependency",
+      file: pkg.source,
+      evidence: `${pkg.name}@${pkg.version}`,
+    }));
+    deps.push({
+      ecosystem: pkg.ecosystem,
+      name: pkg.name,
+      version: pkg.version,
+      source: pkg.source,
+      advisoryId: "AXIOS-2026-03-31",
+      level: "block",
+      summary: "Exact match for a malicious axios release or its dropper.",
+    });
+  }
+  for (const pkg of packages) {
+    if (!isVulnerableMcpSdk(pkg.name, pkg.version)) continue;
+    findings.push(netFinding({
+      id: "DEP_MCP_SDK",
+      severity: "critical",
+      title: "MCP SDK below 1.32.0",
+      summary: `${pkg.source} pins ${pkg.name} ${pkg.version}.`,
+      why: "Exact versions of @modelcontextprotocol/sdk below 1.32.0 are in the affected range for the October 2026 SDK advisories. A range without a resolved version is not an exact match.",
+      remediation: ["Upgrade @modelcontextprotocol/sdk to 1.32.0 or newer and pin it in the lockfile."],
+      recommendationOnly: false,
+      category: "dependency",
+      file: pkg.source,
+      evidence: `${pkg.name}@${pkg.version}`,
+    }));
+    deps.push({
+      ecosystem: pkg.ecosystem,
+      name: pkg.name,
+      version: pkg.version,
+      source: pkg.source,
+      advisoryId: "MCP-SDK-1.32.0",
+      level: "block",
+      summary: "Exact match below @modelcontextprotocol/sdk 1.32.0.",
+    });
+  }
   for (const hit of osv.hits) {
     findings.push(netFinding({
       id: "DEP_OSV",
@@ -160,9 +229,9 @@ export function imageLitellm(images: ImageRef[]): PackageRef[] {
 }
 
 function npmLock(file: { name: string; content: string }): PackageRef[] {
-  let json: { packages?: Record<string, { version?: string }> };
+  let json: { packages?: Record<string, { version?: string }>; dependencies?: unknown };
   try {
-    json = JSON.parse(file.content) as { packages?: Record<string, { version?: string }> };
+    json = JSON.parse(file.content) as { packages?: Record<string, { version?: string }>; dependencies?: unknown };
   } catch {
     return [];
   }
@@ -173,7 +242,20 @@ function npmLock(file: { name: string; content: string }): PackageRef[] {
     if (!name) continue;
     refs.push({ ecosystem: "npm", name, version: meta.version, source: file.name });
   }
+  walkNpmTree(json.dependencies, refs, file.name);
   return refs;
+}
+
+function walkNpmTree(tree: unknown, refs: PackageRef[], source: string): void {
+  if (!tree || typeof tree !== "object") return;
+  for (const [name, meta] of Object.entries(tree as Record<string, unknown>)) {
+    if (!meta || typeof meta !== "object") continue;
+    const record = meta as { version?: unknown; dependencies?: unknown };
+    if (typeof record.version === "string" && record.version) {
+      refs.push({ ecosystem: "npm", name, version: record.version, source });
+    }
+    if (record.dependencies) walkNpmTree(record.dependencies, refs, source);
+  }
 }
 
 function pnpmLock(file: { name: string; content: string }): PackageRef[] {
@@ -188,7 +270,9 @@ function pnpmLock(file: { name: string; content: string }): PackageRef[] {
     if (!inPackages) continue;
     const match = /^ {2,}['"]?\/?((?:@[^\s/'"]+\/)?[^@\s'"]+)@([^:'"\s]+)['"]?:\s*$/.exec(line);
     if (!match?.[1] || !match[2]) continue;
-    refs.push({ ecosystem: "npm", name: match[1], version: match[2], source: file.name });
+    const version = stripPnpmPeers(match[2]);
+    if (!version) continue;
+    refs.push({ ecosystem: "npm", name: match[1], version, source: file.name });
   }
   return refs;
 }
@@ -266,6 +350,141 @@ function dockerPackages(file: { name: string; content: string }): PackageRef[] {
     if (!/^\d+\.\d+\.\d+$/.test(version)) return [];
     return [{ ecosystem: "PyPI" as const, name: "litellm", version, source: file.name }];
   });
+}
+
+export interface ManifestDep {
+  name: string;
+  spec: string;
+  version: string | null;
+  source: string;
+}
+
+const EXACT_SPEC = /^=?v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$/;
+
+/** Direct dependency specs from a package.json. An exact x.y.z pin sets version. Anything else is a range. */
+export function manifestDependencies(file: { name: string; content: string }): ManifestDep[] {
+  let json: Record<string, unknown>;
+  try {
+    json = JSON.parse(file.content) as Record<string, unknown>;
+  } catch {
+    return [];
+  }
+  const out: ManifestDep[] = [];
+  for (const field of ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"]) {
+    const block = json[field];
+    if (!block || typeof block !== "object") continue;
+    for (const [name, spec] of Object.entries(block as Record<string, unknown>)) {
+      if (typeof spec !== "string") continue;
+      const trimmed = spec.trim();
+      const parsed = manifestNameAndVersion(name, trimmed);
+      out.push({ name: parsed.name, spec: trimmed, version: parsed.version, source: file.name });
+    }
+  }
+  return out;
+}
+
+/**
+ * Exact advisory matches for a packed package. Lockfile versions are exact.
+ * With no lockfile, exact package.json pins are checked and ranges are reported.
+ * Ranges do not block.
+ */
+export function gateDependencyReport(
+  manifest: { name: string; content: string } | null,
+  lockfiles: { name: string; content: string }[],
+): { findings: Finding[]; deps: DepCheck[] } {
+  const locked = parseDependencies(lockfiles);
+  const specs = manifest ? manifestDependencies(manifest) : [];
+  const exactFromManifest: PackageRef[] = specs.flatMap((dep) => (
+    dep.version ? [{ ecosystem: "npm" as const, name: dep.name, version: dep.version, source: dep.source }] : []
+  ));
+  const advisory = dependencyFindings(lockfiles.length > 0 ? locked : exactFromManifest, { hits: [] });
+  if (lockfiles.length > 0 && exactFromManifest.length > 0) {
+    const extra = dependencyFindings(exactFromManifest, { hits: [] });
+    advisory.findings.push(...extra.findings);
+    advisory.deps.push(...extra.deps);
+  }
+  const findings = dedupeFindings(advisory.findings);
+  const deps = advisory.deps;
+  if (lockfiles.length === 0) {
+    for (const dep of specs) {
+      if (dep.version) continue;
+      findings.push(netFinding({
+        id: "DEP_RANGE",
+        severity: "informational",
+        title: "Dependency range was not resolved",
+        summary: `${dep.name}@${dep.spec} has no lockfile pin.`,
+        why: "A range can install more than one version. The gate does not install the package to find out which one.",
+        remediation: ["Pin an exact version in a lockfile and review that version."],
+        recommendationOnly: true,
+        category: "dependency",
+        file: dep.source,
+        evidence: `${dep.name}@${dep.spec}`,
+      }));
+      deps.push({
+        ecosystem: "npm",
+        name: dep.name,
+        version: dep.spec,
+        source: dep.source,
+        level: "info",
+        summary: "Range without a lockfile. Not an exact advisory match.",
+      });
+    }
+  }
+  return { findings, deps };
+}
+
+function manifestNameAndVersion(key: string, spec: string): { name: string; version: string | null } {
+  let name = key;
+  let versionText = spec;
+  const alias = /^npm:(.*)$/i.exec(spec);
+  if (alias) {
+    const body = alias[1] ?? "";
+    const at = body.lastIndexOf("@");
+    if (at > 0) {
+      name = body.slice(0, at);
+      versionText = body.slice(at + 1);
+    } else {
+      name = body;
+      versionText = "";
+    }
+  }
+  const exact = EXACT_SPEC.exec(versionText);
+  return { name, version: exact?.[1] ?? null };
+}
+
+/** Drop trailing pnpm peer parentheticals, including nested ones. */
+function stripPnpmPeers(version: string): string {
+  let end = version.length;
+  while (end > 0 && version[end - 1] === ")") {
+    let depth = 0;
+    let found = -1;
+    for (let i = end - 1; i >= 0; i--) {
+      const char = version[i];
+      if (char === ")") depth++;
+      else if (char === "(") {
+        depth--;
+        if (depth === 0) {
+          found = i;
+          break;
+        }
+      }
+    }
+    if (found <= 0) break;
+    end = found;
+  }
+  return version.slice(0, end);
+}
+
+function dedupeFindings(findings: Finding[]): Finding[] {
+  const seen = new Set<string>();
+  const out: Finding[] = [];
+  for (const item of findings) {
+    const key = `${item.id}\0${item.evidence}\0${item.file}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
 }
 
 function dedupe(refs: PackageRef[]): PackageRef[] {

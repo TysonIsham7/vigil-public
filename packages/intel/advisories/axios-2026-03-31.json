@@ -1,0 +1,13 @@
+{
+  "id": "AXIOS-2026-03-31",
+  "published": "2026-03-31",
+  "package": "axios",
+  "ecosystem": "npm",
+  "versions": ["1.14.1", "0.30.4"],
+  "dropper": {
+    "package": "plain-crypto-js",
+    "versions": ["4.2.0", "4.2.1"]
+  },
+  "summary": "axios 1.14.1 and 0.30.4 were malicious npm releases. They depended on plain-crypto-js 4.2.1, which ran from a postinstall script. Both axios versions and the dropper package were removed from the registry.",
+  "remediation": "Remove axios 1.14.1, axios 0.30.4, and plain-crypto-js 4.2.0 or 4.2.1. Pin axios to a release that was not part of that incident, such as 1.14.0 or 0.30.3. Rotate credentials that were present on a machine that installed the bad release."
+}

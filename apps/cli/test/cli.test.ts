@@ -5,8 +5,16 @@ import { zipSync, strToU8 } from "fflate";
 import { describe, expect, it } from "vitest";
 import { buildReport } from "@vigil/core";
 import { intermediatePems } from "@vigil/intel";
-import type { ScanUrlOptions } from "@vigil/netcheck";
+import { BACKEND_CIPHER_OFFER, BACKEND_ERROR_PATH, BACKEND_KNOWN_PATHS, type BackendResponse, type ParsedCert, type ScanUrlOptions } from "@vigil/netcheck";
 import { main } from "../src/main.js";
+import type { TrustAuditReport } from "../src/trust-audit.js";
+
+const quietTrust: TrustAuditReport = {
+  version: 1,
+  probedAt: "2026-10-22T00:00:00.000Z",
+  platform: "linux",
+  incidents: [],
+};
 
 const root = join(import.meta.dirname, "../../..");
 
@@ -77,6 +85,7 @@ describe("cli", () => {
     const output = io();
     const code = await main(["doctor", join(root, "fixtures/doctor"), "--json"], output, {
       versions: { curl: "curl 8.5.0", go: "go version go1.22.2 linux/amd64" },
+      trustAudit: quietTrust,
     });
     expect(code).toBe(0);
     const report = JSON.parse(output.text()) as { blockDeploy: boolean; findings: { id: string; recommendationOnly: boolean }[] };
@@ -97,6 +106,7 @@ describe("cli", () => {
         kernelOs: "Linux",
       },
       trustBundles: [{ label: "node", pem }],
+      trustAudit: quietTrust,
     });
     expect(code).toBe(0);
     const report = JSON.parse(output.text()) as {
@@ -151,4 +161,179 @@ describe("cli", () => {
     expect(code).toBe(1);
     expect(output.error()).toMatch(/not allowed/);
   });
+
+  it("describes the passive backend check in command help", async () => {
+    const output = io();
+    expect(await main(["check-backend", "--help"], output)).toBe(0);
+    const text = output.text();
+    expect(text).toMatch(/passive fingerprint/);
+    expect(text).toMatch(/no crash payload/);
+    expect(text).toMatch(/terms of service/);
+    expect(text).toMatch(/computer-misuse/);
+    expect(text).toMatch(/8\.5\.12/);
+    expect(text).toMatch(/never patched/);
+    expect(text).toMatch(/no version is unknown/);
+    expect(text).toMatch(/phpinfo\.php/);
+  });
+
+  it("warns on an advertised PHP 7 header without calling the network", async () => {
+    const paths: string[] = [];
+    const output = io();
+    const code = await main(["check-backend", "https://example.com/login", "--json"], output, {
+      now: new Date("2026-10-22T00:00:00.000Z"),
+      backendTransport: async (url) => {
+        const path = new URL(url).pathname;
+        paths.push(path);
+        const body: BackendResponse = {
+          url,
+          status: path === BACKEND_ERROR_PATH ? 404 : 200,
+          headers: path === "/login" ? { "x-powered-by": "PHP/7.4.33" } : {},
+          body: path === BACKEND_ERROR_PATH ? "<html><center>nginx</center></html>" : "<html>ok</html>",
+          truncated: false,
+          elapsedMs: path === "/server-status" ? 4000 : 40,
+          ttfbMs: path === "/server-status" ? 2000 : 25,
+        };
+        return body;
+      },
+      backendHandshake: async () => ({
+        protocol: "TLSv1.3",
+        cipher: "TLS_AES_128_GCM_SHA256",
+        offeredCiphers: [...BACKEND_CIPHER_OFFER],
+        certs: [leafCert(), rootCert()],
+      }),
+    });
+    expect(code).toBe(0);
+    expect(paths).toEqual(["/login", BACKEND_ERROR_PATH, ...BACKEND_KNOWN_PATHS]);
+    const report = JSON.parse(output.text()) as {
+      blockDeploy: boolean;
+      verdict: string;
+      findings: { id: string; recommendationOnly: boolean; taxonomy: { domain: string } }[];
+      summary: { byDomain: unknown[] };
+      checks: { vulns: { status: string; detectedVersion?: string }[] };
+    };
+    expect(report.blockDeploy).toBe(false);
+    expect(report.verdict).toBe("warn");
+    expect(report.summary.byDomain).toHaveLength(11);
+    const php = report.findings.find((finding) => finding.id === "PHP_CVE_2026_109618");
+    expect(php?.recommendationOnly).toBe(true);
+    expect(php?.taxonomy.domain).toBe("application-software");
+    expect(report.findings.some((finding) => finding.id === "BACKEND_ERROR_SIGNATURE" && finding.taxonomy.domain === "application-software")).toBe(true);
+    expect(report.findings.some((finding) => finding.id === "BACKEND_TIMING" && finding.taxonomy.domain === "network-infrastructure")).toBe(true);
+    expect(report.checks.vulns[0]).toMatchObject({ status: "vulnerable", detectedVersion: "7.4.33" });
+    expect(output.text()).not.toContain("supersecret");
+  });
+
+  it("exits 2 when check-backend sees an expired certificate", async () => {
+    const output = io();
+    const code = await main(["check-backend", "https://example.com/"], output, {
+      now: new Date("2026-10-22T00:00:00.000Z"),
+      backendTransport: async (url) => ({
+        url,
+        status: 200,
+        headers: {},
+        body: "<html>ok</html>",
+        truncated: false,
+        elapsedMs: 20,
+      }),
+      backendHandshake: async () => ({
+        protocol: "TLSv1.3",
+        cipher: "TLS_AES_128_GCM_SHA256",
+        offeredCiphers: [...BACKEND_CIPHER_OFFER],
+        certs: [leafCert({ notAfter: new Date("2020-01-01T00:00:00.000Z") }), rootCert()],
+      }),
+    });
+    expect(code).toBe(2);
+    expect(output.text()).toContain("CERT_EXPIRED");
+    expect(output.text()).toContain("operational-resilience");
+  });
+
+  it("exits 2 when the first GET throws a certificate error", async () => {
+    const output = io();
+    let handshakes = 0;
+    const cause = Object.assign(new Error("certificate has expired"), { code: "CERT_HAS_EXPIRED" });
+    const code = await main(["check-backend", "https://example.com/"], output, {
+      now: new Date("2026-10-22T00:00:00.000Z"),
+      backendTransport: async () => {
+        throw Object.assign(new TypeError("fetch failed"), { cause });
+      },
+      backendHandshake: async () => {
+        handshakes += 1;
+        return {
+          protocol: "TLSv1.3",
+          cipher: "TLS_AES_128_GCM_SHA256",
+          offeredCiphers: [...BACKEND_CIPHER_OFFER],
+          certs: [leafCert({ notAfter: new Date("2020-01-01T00:00:00.000Z") }), rootCert()],
+        };
+      },
+    });
+    expect(handshakes).toBe(1);
+    expect(code).toBe(2);
+    expect(output.text()).toContain("CERT_EXPIRED");
+    expect(output.error()).toBe("");
+  });
+
+  it("exits 1 when check-backend cannot connect", async () => {
+    const output = io();
+    let handshakes = 0;
+    const cause = Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" });
+    const code = await main(["check-backend", "https://example.com/"], output, {
+      backendTransport: async () => {
+        throw Object.assign(new TypeError("fetch failed"), { cause });
+      },
+      backendHandshake: async () => {
+        handshakes += 1;
+        return {
+          protocol: "TLSv1.3",
+          cipher: "TLS_AES_128_GCM_SHA256",
+          offeredCiphers: [...BACKEND_CIPHER_OFFER],
+          certs: [leafCert(), rootCert()],
+        };
+      },
+    });
+    expect(handshakes).toBe(0);
+    expect(code).toBe(1);
+    expect(output.error()).toMatch(/ECONNREFUSED|fetch failed/);
+  });
+
+  it("rejects check-backend usage and a metadata URL before any probe", async () => {
+    const missing = io();
+    expect(await main(["check-backend"], missing)).toBe(1);
+    expect(missing.error()).toMatch(/http\(s\) URL/);
+    const extra = io();
+    expect(await main(["check-backend", "https://example.com/", "more"], extra)).toBe(1);
+    expect(extra.error()).toMatch(/one URL/);
+    const blocked = io();
+    expect(await main(["check-backend", "http://169.254.169.254/"], blocked)).toBe(1);
+    expect(blocked.error()).toMatch(/not allowed/);
+  });
 });
+
+function leafCert(overrides: Partial<ParsedCert> = {}): ParsedCert {
+  return {
+    subject: "CN=example.com",
+    issuer: "CN=Root",
+    sanDns: ["example.com"],
+    sanIp: [],
+    notBefore: new Date("2026-01-01T00:00:00.000Z"),
+    notAfter: new Date("2027-01-01T00:00:00.000Z"),
+    sha256: "aa".repeat(32),
+    spkiSha256: "bb".repeat(32),
+    signatureAlgorithm: "sha256WithRSAEncryption",
+    publicKeyAlgorithm: "rsa",
+    publicKeyBits: 2048,
+    selfSigned: false,
+    sct: { present: true, count: 2, wellFormed: true },
+    ...overrides,
+  };
+}
+
+function rootCert(): ParsedCert {
+  return leafCert({
+    subject: "CN=Root",
+    issuer: "CN=Root",
+    sanDns: [],
+    selfSigned: true,
+    spkiSha256: "cc".repeat(32),
+    sha256: "dd".repeat(32),
+  });
+}

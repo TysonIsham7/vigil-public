@@ -24,6 +24,11 @@
     <label>High Security Mode <input id="mode" type="checkbox"></label>
     <p class="muted">Normal mode only changes the badge. High Security holds unknown sites until the check finishes.</p>
     <ul id="findings"></ul>
+    <p class="muted">Page guards run in Chrome. Each one stays on this machine. Turning a guard off stops it on pages opened after that. A page already open keeps its hook until you reload it.</p>
+    <label>PHP2Shell header class <input id="guard-php" type="checkbox"></label>
+    <label>ClickFix clipboard <input id="guard-clickfix" type="checkbox"></label>
+    <label>Recovery phrase <input id="guard-seed" type="checkbox"></label>
+    <label>Wallet requests <input id="guard-wallet" type="checkbox"></label>
     <label for="helper">Loopback helper</label>
     <input id="helper" type="text" placeholder="http://127.0.0.1:8787" autocomplete="off" spellcheck="false">
     <label for="token">Helper token</label>

@@ -41,6 +41,9 @@ await build({
   entryPoints: {
     "blank-guard": "apps/extension/src/blank-guard-main.ts",
     "blank-relay": "apps/extension/src/blank-relay.ts",
+    "clickfix-guard": "apps/extension/src/clickfix-guard-main.ts",
+    "seed-guard": "apps/extension/src/seed-guard-main.ts",
+    "wallet-guard": "apps/extension/src/wallet-guard-main.ts",
   },
   bundle: true,
   platform: "browser",
