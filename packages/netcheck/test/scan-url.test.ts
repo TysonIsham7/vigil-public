@@ -56,6 +56,8 @@ describe("scanUrl", () => {
     expect(php?.remediation[1] ?? "").toMatch(/partial mitigation/);
     expect(php?.remediation[0] ?? "").not.toMatch(/session\.upload_progress/);
     expect(php?.remediation[2] ?? "").toMatch(/CVE-2026-115560/);
+    expect(php?.why).toMatch(/Known Exploited Vulnerabilities/);
+    expect(php?.remediation.at(-1)).toMatch(/take the PHP system offline/);
     expect(php?.remediation.join(" ")).not.toMatch(/does not block a deploy or hold a page/);
     expect(owner.report.checks.vulns?.[0]?.mitigation ?? "").toMatch(/^Upgrade PHP/);
     expect(owner.report.checks.vulns?.[1]?.advisoryId).toBe("PHP-CVE-2026-115560");

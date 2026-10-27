@@ -190,6 +190,8 @@ describe("check-backend", () => {
     expect(php?.evidence).toBe("7.4.33");
     expect(php?.remediation[0]).toMatch(/^Upgrade PHP/);
     expect(php?.remediation.join(" ")).toMatch(/CVE-2026-115560/);
+    expect(php?.why).toMatch(/Known Exploited Vulnerabilities/);
+    expect(php?.remediation.at(-1)).toMatch(/take the PHP system offline/);
     expect(php?.remediation.join(" ")).not.toMatch(/does not block a deploy or hold a page/);
     expect(result.vulns[0]).toMatchObject({ status: "vulnerable", detectedVersion: "7.4.33", audience: "visitor" });
     expect(result.findings.find((finding) => finding.id === "BACKEND_TLS_CIPHER")?.severity).toBe("high");
@@ -220,6 +222,8 @@ describe("check-backend", () => {
     expect(php?.title).not.toMatch(/never patched/);
     expect(php?.taxonomy.nistCsf.category).toBe("ID.RA");
     expect(php?.recommendationOnly).toBe(true);
+    expect(php?.why).toMatch(/26 October 2026/);
+    expect(php?.remediation.at(-1)).toMatch(/take the PHP system offline/);
     expect(php?.remediation.join(" ")).not.toMatch(/does not block a deploy or hold a page/);
 
     const patched = assess([response({

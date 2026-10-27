@@ -32,6 +32,7 @@ describe("host verdict", () => {
     expect(php?.summary.startsWith("Upgrade PHP")).toBe(true);
     expect(php?.summary).toMatch(/partial mitigation/);
     expect(php?.summary).toMatch(/CVE-2026-115560/);
+    expect(php?.summary).toMatch(/catalog 2026\.10\.26/);
     expect(php?.summary).not.toMatch(/does not block a deploy or hold a page/);
     expect(result.signals.some((signal) => signal.id === "PHP_CVE_2026_115560")).toBe(false);
     expect(result.signals.find((signal) => signal.id === "PHP2SHELL_EXPOSURE")?.title).toBe("PHP2Shell: exposed");
