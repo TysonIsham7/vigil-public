@@ -175,6 +175,8 @@ describe("doctor toolchain", () => {
     const nodeOk = assessToolchain({ nodeVersion: "v22.23.4" });
     expect(nodeOld.some((finding) => finding.id === "TOOLCHAIN_NODE" && finding.recommendationOnly)).toBe(true);
     expect(nodeOld.find((finding) => finding.id === "TOOLCHAIN_NODE")?.evidence).toBe("22.23.3");
+    expect(nodeOld.find((finding) => finding.id === "TOOLCHAIN_NODE")?.why).toMatch(/CVE-2026-111497/);
+    expect(nodeOld.find((finding) => finding.id === "TOOLCHAIN_NODE")?.remediation.join(" ")).toMatch(/27 October 2026/);
     expect(nodeOk.some((finding) => finding.id === "TOOLCHAIN_NODE")).toBe(false);
     expect(assessToolchain({ nodeVersion: "v24.22.0" }).some((finding) => finding.id === "TOOLCHAIN_NODE")).toBe(true);
     expect(assessToolchain({ nodeVersion: "v26.12.1" }).some((finding) => finding.id === "TOOLCHAIN_NODE")).toBe(false);

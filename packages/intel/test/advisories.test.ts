@@ -9,6 +9,7 @@ import {
   isCompromisedLitellm,
   isVulnerableMcpSdk,
   nginxMissingSecurityRelease,
+  nodeAdvisory,
   nodeMissingSecurityRelease,
   pythonMissingSecurityRelease,
   litellmImage,
@@ -149,6 +150,10 @@ describe("advisories", () => {
     expect(nodeMissingSecurityRelease("25.0.0")).toBe(true);
     expect(nodeMissingSecurityRelease("20.19.0")).toBe(true);
     expect(nodeMissingSecurityRelease("27.0.0")).toBe(false);
+    expect(nodeAdvisory.knownExploited).toMatch(/27 October 2026/);
+    expect(nodeAdvisory.knownExploited).toMatch(/2026\.10\.27/);
+    expect(nodeAdvisory.knownExploited).toMatch(/CVE-2026-111497/);
+    expect(nodeAdvisory.kevAction).toMatch(/21 October 2026/);
   });
 
   it("flags nginx builds below the 14 October 2026 security release", () => {
