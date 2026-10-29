@@ -1,4 +1,4 @@
-import { assessKernel, curlAdvisory, curlAffected, goAdvisory, goMissingTrustFix, kernelAdvisory, litellmAdvisory, nginxAdvisory, nginxMissingSecurityRelease, nodeAdvisory, nodeMissingSecurityRelease, pipAdvisory, pipMissingCertifiFix, pythonAdvisory, pythonMissingSecurityRelease, pythonVersionEvidence, uvMissingCertifiFix } from "@vigil/intel";
+import { assessKernel, assessKernelSharedFrag, curlAdvisory, curlAffected, goAdvisory, goMissingTrustFix, kernelAdvisory, kernelSharedFragAdvisory, litellmAdvisory, nginxAdvisory, nginxMissingSecurityRelease, nodeAdvisory, nodeMissingSecurityRelease, pipAdvisory, pipMissingCertifiFix, pythonAdvisory, pythonMissingSecurityRelease, pythonVersionEvidence, uvMissingCertifiFix } from "@vigil/intel";
 import type { Finding } from "@vigil/core";
 import { dockerImageName, parseDockerImages, type ImageRef } from "./deps.js";
 import { netFinding } from "./finding.js";
@@ -135,6 +135,8 @@ export function assessToolchain(input: {
   if (input.kernelRelease && isLinux(input.kernelOs)) {
     const kernel = kernelFinding(input.kernelRelease);
     if (kernel) findings.push(kernel);
+    const sharedFrag = kernelSharedFragFinding(input.kernelRelease);
+    if (sharedFrag) findings.push(sharedFrag);
   }
   findings.push(...trustStoreFindings(input.trustBundles ?? []));
   for (const image of input.images ?? []) {
@@ -199,19 +201,39 @@ export function imagesFromDockerfiles(files: { name: string; content: string }[]
   return files.flatMap((file) => parseDockerImages(file.name, file.content));
 }
 
+function kernelSummary(version: string, fixedIn: string | undefined): string {
+  return fixedIn
+    ? `uname reports ${version}. Upstream ${fixedIn.split(".").slice(0, 2).join(".")} is fixed in ${fixedIn}. A distributor may have backported that fix without changing this version string.`
+    : `uname reports ${version}. The advisory lists no stable fix for this major.minor. Treat it as affected unless the distributor confirms a backport. uname cannot show that.`;
+}
+
 export function kernelFinding(text: string): Finding | undefined {
   const assessment = assessKernel(text);
   if (!assessment?.affected) return undefined;
-  const summary = assessment.fixedIn
-    ? `uname reports ${assessment.version}. Upstream ${assessment.fixedIn.split(".").slice(0, 2).join(".")} is fixed in ${assessment.fixedIn}. A distributor may have backported that fix without changing this version string.`
-    : `uname reports ${assessment.version}. The advisory lists no stable fix for this major.minor. Treat it as affected unless the distributor confirms a backport. uname cannot show that.`;
   return netFinding({
     id: "KERNEL_CVE_2026_99999",
     severity: "high",
     title: "Local kernel is in the PwnEscape range",
-    summary,
+    summary: kernelSummary(assessment.version, assessment.fixedIn),
     why: `${kernelAdvisory.name} (${kernelAdvisory.cve}) is a Linux IPv4 checksum_start bug with a virtio guest-to-host impact, CVSS ${kernelAdvisory.cvss}. This is the local version only. It does not block a deploy.`,
     remediation: [kernelAdvisory.remediation],
+    recommendationOnly: true,
+    category: "kernel",
+    file: "(local)",
+    evidence: assessment.version,
+  });
+}
+
+export function kernelSharedFragFinding(text: string): Finding | undefined {
+  const assessment = assessKernelSharedFrag(text);
+  if (!assessment?.affected) return undefined;
+  return netFinding({
+    id: "KERNEL_CVE_2026_46300",
+    severity: "high",
+    title: "Local kernel is in the CVE-2026-46300 range",
+    summary: kernelSummary(assessment.version, assessment.fixedIn),
+    why: `${kernelSharedFragAdvisory.name} (${kernelSharedFragAdvisory.cve}) is in the CISA Known Exploited Vulnerabilities catalog, added 2026-10-28, due 2026-10-31. Forensic triage is required. Ransomware use is unknown. This is the local version only. It does not block a deploy.`,
+    remediation: [kernelSharedFragAdvisory.remediation],
     recommendationOnly: true,
     category: "kernel",
     file: "(local)",
@@ -225,7 +247,7 @@ export function sharedHostFinding(): Finding {
     id: "KERNEL_SHARED_HOST",
     severity: "informational",
     title: "Shared-host kernel risk is not visible from here",
-    summary: `${kernelAdvisory.name} (${kernelAdvisory.cve}) is a Linux host-kernel bug. This scan cannot see the host kernel, so it does not say whether that host is affected.`,
+    summary: `${kernelAdvisory.name} (${kernelAdvisory.cve}) is a Linux host-kernel bug. This scan cannot see the host kernel, so it does not say whether that host is affected. The same limit applies to CVE-2026-46300.`,
     why: "A page, certificate, and set of headers do not include the kernel of the machine that served them. Shared hosting and a VM whose host is still in the affected range are outside what a site scan can measure.",
     remediation: ["Run vigil doctor on the host that serves this site. A remote scan is not a kernel check."],
     recommendationOnly: true,

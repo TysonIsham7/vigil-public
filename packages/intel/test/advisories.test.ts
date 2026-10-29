@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assessKernel,
+  assessKernelSharedFrag,
   classifyPhpExposure,
   curlAffected,
   evaluatePhp,
@@ -252,6 +253,32 @@ describe("advisories", () => {
     expect(assessKernel("6.8.0-45-generic")?.fixedIn).toBeUndefined();
     expect(assessKernel("2.6.26")?.affected).toBe(false);
     expect(assessKernel("Linux secret-host 6.12.94+ #1")?.version).toBe("6.12.94");
+  });
+
+  it("compares a kernel release to the CVE-2026-46300 stable fixes", () => {
+    expect(assessKernelSharedFrag("6.12.90")?.affected).toBe(true);
+    expect(assessKernelSharedFrag("6.12.90")?.fixedIn).toBe("6.12.91");
+    expect(assessKernelSharedFrag("6.12.91")?.affected).toBe(false);
+    expect(assessKernelSharedFrag("6.12.94+")?.affected).toBe(false);
+    expect(assessKernelSharedFrag("5.10.256")?.affected).toBe(true);
+    expect(assessKernelSharedFrag("5.10.257")?.affected).toBe(false);
+    expect(assessKernelSharedFrag("5.15.207")?.affected).toBe(true);
+    expect(assessKernelSharedFrag("5.15.208")?.affected).toBe(false);
+    expect(assessKernelSharedFrag("6.1.173")?.affected).toBe(true);
+    expect(assessKernelSharedFrag("6.1.174")?.affected).toBe(false);
+    expect(assessKernelSharedFrag("6.6.140")?.affected).toBe(true);
+    expect(assessKernelSharedFrag("6.6.141")?.affected).toBe(false);
+    expect(assessKernelSharedFrag("6.18.32")?.affected).toBe(true);
+    expect(assessKernelSharedFrag("6.18.33")?.affected).toBe(false);
+    expect(assessKernelSharedFrag("7.0.9")?.affected).toBe(true);
+    expect(assessKernelSharedFrag("7.0.9")?.fixedIn).toBe("7.0.10");
+    expect(assessKernelSharedFrag("7.0.10")?.affected).toBe(false);
+    expect(assessKernelSharedFrag("7.1.0")?.affected).toBe(false);
+    expect(assessKernelSharedFrag("7.2.0")?.affected).toBe(false);
+    expect(assessKernelSharedFrag("6.8.0-45-generic")?.affected).toBe(true);
+    expect(assessKernelSharedFrag("6.8.0-45-generic")?.fixedIn).toBeUndefined();
+    expect(assessKernelSharedFrag("3.8.0")?.affected).toBe(false);
+    expect(assessKernelSharedFrag("3.9.0")?.affected).toBe(true);
   });
 
   it("matches the malicious axios releases and MCP SDK versions below 1.32.0 exactly", () => {

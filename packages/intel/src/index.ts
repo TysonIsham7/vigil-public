@@ -1,6 +1,7 @@
 export { INTEL_VERSION } from "./version.js";
 export {
   assessKernel,
+  assessKernelSharedFrag,
   classifyPhpHeaders,
   curlAdvisory,
   curlAffected,
@@ -13,6 +14,7 @@ export {
   isCompromisedLitellm,
   isVulnerableMcpSdk,
   kernelAdvisory,
+  kernelSharedFragAdvisory,
   kernelRelease,
   litellmAdvisory,
   litellmImage,

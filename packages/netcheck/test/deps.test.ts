@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildReport } from "@vigil/core";
 import { intermediatePems } from "@vigil/intel";
-import { assessToolchain, dependencyFindings, gateDependencyReport, kernelFinding, manifestDependencies, parseDependencies, parseDockerImages, queryOsv, sharedHostFinding, trustStoreFindings, versionToken } from "../src/index.js";
+import { assessToolchain, dependencyFindings, gateDependencyReport, kernelFinding, kernelSharedFragFinding, manifestDependencies, parseDependencies, parseDockerImages, queryOsv, sharedHostFinding, trustStoreFindings, versionToken } from "../src/index.js";
 import { ageInDays, registrationDate, selectRdapServer } from "../src/index.js";
 
 const depsDir = join(import.meta.dirname, "../../../fixtures/deps");
@@ -320,6 +320,11 @@ describe("doctor toolchain", () => {
     expect(JSON.stringify(trust)).not.toContain("BEGIN CERTIFICATE");
     expect(findings.some((finding) => finding.id === "TOOLCHAIN_GO")).toBe(false);
     expect(assessToolchain({ kernelRelease: "6.12.113", kernelOs: "Linux" }).some((finding) => finding.id === "KERNEL_CVE_2026_99999")).toBe(false);
+    expect(findings.some((finding) => finding.id === "KERNEL_CVE_2026_46300")).toBe(false);
+    const oldFrag = assessToolchain({ kernelRelease: "6.12.90", kernelOs: "Linux" }).find((finding) => finding.id === "KERNEL_CVE_2026_46300");
+    expect(oldFrag).toMatchObject({ recommendationOnly: true, evidence: "6.12.90", taxonomy: { domain: "endpoint-device" } });
+    expect(kernelSharedFragFinding("6.12.91")).toBeUndefined();
+    expect(kernelSharedFragFinding("7.1.0")).toBeUndefined();
     const oldPip = assessToolchain({ pipVersion: "pip 24.0 from /usr/lib/python3/dist-packages/pip (python 3.12)", uvVersion: "uv 0.13.3" });
     expect(oldPip.find((finding) => finding.id === "TOOLCHAIN_PIP")).toMatchObject({ recommendationOnly: true, evidence: "24.0.0" });
     expect(oldPip.find((finding) => finding.id === "TOOLCHAIN_UV")).toMatchObject({ recommendationOnly: true, evidence: "0.13.3" });
