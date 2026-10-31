@@ -164,8 +164,8 @@ function exposure(
       ...(version ? { version } : {}),
       title: label,
       summary: version
-        ? `PHP ${version} is exposed to CVE-2026-109618 and CVE-2026-109619. ${phpAdvisory.upgrade} Versions at or below 8.1 are end of life and have no fix.`
-        : `The disclosed PHP version is exposed to CVE-2026-109618 and CVE-2026-109619. ${phpAdvisory.upgrade}`,
+        ? `PHP ${version} is exposed to CVE-2026-109618 and CVE-2026-109619. ${phpAdvisory.upgrade} Versions at or below 8.1 are end of life and have no fix. ${phpAdvisory.knownExploited}`
+        : `The disclosed PHP version is exposed to CVE-2026-109618 and CVE-2026-109619. ${phpAdvisory.upgrade} ${phpAdvisory.knownExploited}`,
       severity,
       confidence,
     };

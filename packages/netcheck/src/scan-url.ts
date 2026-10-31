@@ -163,10 +163,14 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
     severity: exposure.severity,
     title: exposure.title,
     summary: exposure.summary,
-    why: "The class comes from the X-Powered-By and Server headers already on this response. Vigil did not send another request.",
-    remediation: exposure.status === "exposed" || exposure.status === "hidden"
-      ? [phpAdvisory.upgrade, phpAdvisory.mitigation]
-      : ["Those headers do not show an unpatched PHP version."],
+    why: exposure.status === "exposed"
+      ? `The class comes from the X-Powered-By and Server headers already on this response. Vigil did not send another request. ${phpAdvisory.knownExploited}`
+      : "The class comes from the X-Powered-By and Server headers already on this response. Vigil did not send another request.",
+    remediation: exposure.status === "exposed"
+      ? [phpAdvisory.upgrade, phpAdvisory.mitigation, phpAdvisory.kevAction]
+      : exposure.status === "hidden"
+        ? [phpAdvisory.upgrade, phpAdvisory.mitigation]
+        : ["Those headers do not show an unpatched PHP version."],
     recommendationOnly: true,
     category: "vulnerability",
     confidence: exposure.confidence,
@@ -180,10 +184,12 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
       summary: php.version
         ? `Upgrade PHP. PHP ${php.version} is below the fixed release for CVE-2026-109618 and CVE-2026-109619. CVE-2026-115560 still has no patched release.`
         : "The response looks like PHP, but no PHP/x.y.z version was disclosed. Upgrade PHP if this server runs it. CVE-2026-115560 still has no patched release.",
-      why: options.audience === "owner"
+      why: `${options.audience === "owner"
         ? "A confirmed vulnerable version on the owner's scan is a critical deploy block. A missing version stays a recommendation."
-        : "A visitor scan warns instead of blocking, because the visitor does not control the server.",
-      remediation: [phpAdvisory.upgrade, phpAdvisory.mitigation, phpSessionUnfixedLine()],
+        : "A visitor scan warns instead of blocking, because the visitor does not control the server."}${php.version ? ` ${phpAdvisory.knownExploited}` : ""}`,
+      remediation: php.version
+        ? [phpAdvisory.upgrade, phpAdvisory.mitigation, phpSessionUnfixedLine(), phpAdvisory.kevAction]
+        : [phpAdvisory.upgrade, phpAdvisory.mitigation, phpSessionUnfixedLine()],
       recommendationOnly: php.recommendationOnly,
       category: "vulnerability",
       confidence: php.version ? "high" : "medium",

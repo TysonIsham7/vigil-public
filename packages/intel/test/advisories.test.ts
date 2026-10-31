@@ -99,6 +99,11 @@ describe("advisories", () => {
       { major: 8, minor: 5, patch: 12 },
     ]);
     expect(phpAdvisory.exposure.eolUnpatchedAtOrBelow).toEqual({ major: 8, minor: 1 });
+    expect(phpAdvisory.knownExploited).toMatch(/26 October 2026/);
+    expect(phpAdvisory.knownExploited).toMatch(/2026\.10\.26/);
+    expect(phpAdvisory.kevAction).toMatch(/take the PHP system offline/);
+    expect(classifyPhpExposure({ "X-Powered-By": "PHP/8.2.34" }).summary).toMatch(/Known Exploited Vulnerabilities/);
+    expect(classifyPhpExposure({ "X-Powered-By": "PHP/8.5.12" }).summary).not.toMatch(/Known Exploited Vulnerabilities/);
     for (const line of phpAdvisory.fixed) {
       const below = `${line.major}.${line.minor}.${line.patch - 1}`;
       const at = `${line.major}.${line.minor}.${line.patch}`;

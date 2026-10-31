@@ -453,8 +453,8 @@ function phpFinding(findings: Finding[], php: PhpHeaderExposure): void {
       confidence: "high",
       title: "PHP 5-7 was never patched",
       summary: `PHP ${php.version} is in the 5, 6, or 7 line. Those lines were never patched for CVE-2026-109618 and CVE-2026-109619.`,
-      why: "The version was advertised in a response header. Vigil compared it with the patched PHP releases and did not probe the server.",
-      remediation: [phpAdvisory.upgrade, phpAdvisory.mitigation, phpSessionUnfixedLine()],
+      why: `The version was advertised in a response header. Vigil compared it with the patched PHP releases and did not probe the server. ${phpAdvisory.knownExploited}`,
+      remediation: [phpAdvisory.upgrade, phpAdvisory.mitigation, phpSessionUnfixedLine(), phpAdvisory.kevAction],
       category: "vulnerability",
       evidence: php.version,
     });
@@ -467,8 +467,8 @@ function phpFinding(findings: Finding[], php: PhpHeaderExposure): void {
       confidence: "high",
       title: "Upgrade PHP",
       summary: `Upgrade PHP. PHP ${php.version} is below the fixed release for CVE-2026-109618 and CVE-2026-109619. CVE-2026-115560 still has no patched release.`,
-      why: "The version was advertised in a response header. Vigil compared it with the patched PHP releases and did not probe the server.",
-      remediation: [phpAdvisory.upgrade, phpAdvisory.mitigation, phpSessionUnfixedLine()],
+      why: `The version was advertised in a response header. Vigil compared it with the patched PHP releases and did not probe the server. ${phpAdvisory.knownExploited}`,
+      remediation: [phpAdvisory.upgrade, phpAdvisory.mitigation, phpSessionUnfixedLine(), phpAdvisory.kevAction],
       category: "vulnerability",
       evidence: php.version,
     });
