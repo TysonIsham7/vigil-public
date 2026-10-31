@@ -62,6 +62,7 @@ export interface CliDeps {
     nginx?: string | null;
     pip?: string | null;
     uv?: string | null;
+    python?: string | null;
     kernel?: string | null;
     kernelOs?: string | null;
   };
@@ -122,7 +123,7 @@ scan is unchanged: it still skips dist and still uses the 40-file source cap. ga
 
 scan reads files or scans a URL as the site owner. check-url scans a URL as a visitor.
 check-url and an owner URL scan flag AGENT_DIRECTED_REQUEST when a page addresses an agent and asks for identity, a credential, or a behavior change. That finding is recommendationOnly. It does not hold the page and it does not block a deploy. It is not the outbound guard.
-deps reads lockfiles and Dockerfiles. doctor reports the local Node, curl, Go, nginx, pip, uv, kernel (uname), trust stores, and trust-audit.
+deps reads lockfiles and Dockerfiles. doctor reports the local Node, curl, Go, nginx, pip, uv, Python, kernel (uname), trust stores, and trust-audit.
 trust-audit probes local TLS clients against known-bad test hosts and prints advice. It does not change trust settings, shell profiles, or system files. A timeout is unknown. It does not mean the tool rejected the chain. Exit 0 when the audit finishes.
 serve listens on 127.0.0.1 for the extension helper. It returns verdict signals for one hostname and stores no page content.
 native-host speaks Chrome's stdio native-messaging protocol and returns that same verdict. It does not log.
@@ -382,6 +383,7 @@ async function doctorReport(flags: Flags, deps: CliDeps, now: Date): Promise<Rep
     nginx: await nginxVersion(),
     pip: await commandOutput("pip", ["--version"]) ?? await commandOutput("pip3", ["--version"]),
     uv: await commandOutput("uv", ["--version"]),
+    python: await commandOutput("python3", ["--version"]) ?? await commandOutput("python", ["--version"]),
     kernel: await commandOutput("uname", ["-r"]),
     kernelOs: await commandOutput("uname", ["-s"]),
   };
@@ -400,6 +402,7 @@ async function doctorReport(flags: Flags, deps: CliDeps, now: Date): Promise<Rep
       nginxVersion: versions.nginx,
       pipVersion: versions.pip,
       uvVersion: versions.uv,
+      pythonVersion: versions.python,
       kernelRelease: versions.kernel,
       kernelOs: versions.kernelOs,
       trustBundles,

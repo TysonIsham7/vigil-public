@@ -214,6 +214,67 @@ describe("doctor toolchain", () => {
     expect(flagged.every((finding) => finding.recommendationOnly)).toBe(true);
   });
 
+  it("does not invent patch 0 for a floating Python image tag", () => {
+    expect(versionToken("3.12")).toBe("3.12.0");
+    const images = parseDockerImages("Dockerfile", [
+      "FROM python:3.12",
+      "FROM python:3.12-slim",
+      "FROM ghcr.io/org/python:3.12",
+      "FROM python:3.11",
+      "FROM python:3.13",
+      "FROM python:3.14",
+      "FROM python:3.15",
+      "FROM python:3.12.0",
+      "FROM python:3.10",
+      "FROM python:3.10-alpine",
+    ].join("\n"));
+    expect(images.map((image) => image.tag)).toEqual([
+      "3.12", "3.12-slim", "3.12", "3.11", "3.13", "3.14", "3.15", "3.12.0", "3.10", "3.10-alpine",
+    ]);
+    const findings = assessToolchain({ images, pythonVersion: "Python 3.12" });
+    const flagged = findings.filter((finding) => finding.id === "TOOLCHAIN_IMAGE" || finding.id === "TOOLCHAIN_PYTHON");
+    expect(flagged.map((finding) => finding.evidence).sort()).toEqual(["python:3.10", "python:3.10-alpine", "python:3.12.0"]);
+    expect(flagged.every((finding) => finding.severity === "high" && finding.recommendationOnly)).toBe(true);
+    expect(assessToolchain({ pythonVersion: "Python 3.12.0" }).some((finding) => finding.id === "TOOLCHAIN_PYTHON" && finding.evidence === "3.12.0")).toBe(true);
+    expect(assessToolchain({ pythonVersion: "Python 3.10" }).some((finding) => finding.id === "TOOLCHAIN_PYTHON" && finding.evidence === "3.10")).toBe(true);
+    expect(buildReport({ findings, sourceType: "files", filesAnalyzed: 1, bytesAnalyzed: 0, intelVersion: "test" }).blockDeploy).toBe(false);
+  });
+
+  it("treats a pre-release of a fixed Python version as below that release", () => {
+    const rc = assessToolchain({ pythonVersion: "Python 3.12.16rc1" });
+    expect(rc.find((finding) => finding.id === "TOOLCHAIN_PYTHON")).toMatchObject({
+      severity: "high",
+      recommendationOnly: true,
+      evidence: "3.12.16rc1",
+    });
+    expect(assessToolchain({ pythonVersion: "Python 3.15.2a1" }).find((finding) => finding.id === "TOOLCHAIN_PYTHON")?.evidence).toBe("3.15.2a1");
+    expect(assessToolchain({ pythonVersion: "Python 3.12.16.dev1" }).find((finding) => finding.id === "TOOLCHAIN_PYTHON")?.evidence).toBe("3.12.16.dev1");
+    expect(assessToolchain({ pythonVersion: "Python 3.12.16" }).some((finding) => finding.id === "TOOLCHAIN_PYTHON")).toBe(false);
+    expect(assessToolchain({ pythonVersion: "Python 3.12.16+" }).some((finding) => finding.id === "TOOLCHAIN_PYTHON")).toBe(false);
+    expect(assessToolchain({ pythonVersion: "Python 3.14.0a1" }).some((finding) => finding.id === "TOOLCHAIN_PYTHON" && finding.evidence === "3.14.0a1")).toBe(true);
+    expect(buildReport({ findings: rc, sourceType: "files", filesAnalyzed: 0, bytesAnalyzed: 0, intelVersion: "test" }).blockDeploy).toBe(false);
+  });
+
+  it("keeps a Python image tag when a digest or registry port adds a colon", () => {
+    const dockerfile = [
+      "FROM python:3.12.15@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "FROM localhost:5000/python:3.12.15@sha256:fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+      "FROM localhost:5000/python:3.12.15",
+      "FROM python:3.12.16",
+    ].join("\n");
+    const images = parseDockerImages("Dockerfile", dockerfile);
+    expect(images.map((image) => image.tag)).toEqual(["3.12.15", "3.12.15", "3.12.15", "3.12.16"]);
+    const findings = assessToolchain({ images }).filter((finding) => finding.id === "TOOLCHAIN_IMAGE");
+    expect(findings).toHaveLength(3);
+    expect(findings.every((finding) => finding.severity === "high" && finding.recommendationOnly)).toBe(true);
+    expect(findings.map((finding) => finding.evidence)).toEqual([
+      "python:3.12.15@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "localhost:5000/python:3.12.15@sha256:fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+      "localhost:5000/python:3.12.15",
+    ]);
+    expect(buildReport({ findings, sourceType: "files", filesAnalyzed: 1, bytesAnalyzed: 0, intelVersion: "test" }).blockDeploy).toBe(false);
+  });
+
   it("reports an affected uname and a trust store that still has an eMudhra key", () => {
     const pem = intermediatePems()[0]?.pem ?? "";
     const findings = assessToolchain({

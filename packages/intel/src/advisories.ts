@@ -9,6 +9,7 @@ import nodeAdvisory from "../advisories/node-2026-10-21.json" with { type: "json
 import phpAdvisory from "../advisories/php-cve-2026-109618.json" with { type: "json" };
 import phpSessionAdvisory from "../advisories/php-cve-2026-115560.json" with { type: "json" };
 import pipAdvisory from "../advisories/pip-26.2.2-emudhra.json" with { type: "json" };
+import pythonAdvisory from "../advisories/python-2026-10-26.json" with { type: "json" };
 
 export {
   axiosAdvisory,
@@ -22,6 +23,7 @@ export {
   phpAdvisory,
   phpSessionAdvisory,
   pipAdvisory,
+  pythonAdvisory,
 };
 
 export const PHP_SESSION_PROGRESS_ID = "PHP_CVE_2026_115560";
@@ -347,6 +349,50 @@ function belowFixed(version: string, fixed: string): boolean {
   const floor = parseVersion(fixed);
   if (!parsed || !floor) return false;
   return cmpVersion(parsed, floor) < 0;
+}
+
+interface PythonVersion {
+  major: number;
+  minor: number;
+  patch: number | null;
+  pre: boolean;
+  text: string;
+}
+
+/** First CPython version in the text. A missing patch stays missing. `a`, `b`, `rc`, and `.dev` stay attached. */
+function readPythonVersion(input: string): PythonVersion | null {
+  const re = /(?:^|[^0-9])(\d+)\.(\d+)(?:\.(\d+))?/g;
+  const match = re.exec(input);
+  if (!match?.[1] || !match[2]) return null;
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  const patch = match[3] !== undefined ? Number(match[3]) : null;
+  const pre = /^(?:a\d*|b\d*|rc\d*|\.dev\d*)/.exec(input.slice(re.lastIndex));
+  const numeric = patch === null ? `${major}.${minor}` : `${major}.${minor}.${patch}`;
+  return { major, minor, patch, pre: pre !== null, text: pre ? `${numeric}${pre[0]}` : numeric };
+}
+
+/**
+ * True when this CPython build is below the 26 October 2026 security release
+ * on a line that received one, or is 3.10 or older. A two-component tag on
+ * 3.11–3.15 names no patch and is not treated as patch 0. An explicit patch,
+ * including 0, is compared with the floor. `a`, `b`, `rc`, and `.dev` on that
+ * floor are still below it. A final release and a `+` local build of the same
+ * triple are not. Python 3.16 and newer are not compared with 3.16.0.
+ */
+export function pythonMissingSecurityRelease(version: string): boolean {
+  const parsed = readPythonVersion(version);
+  if (!parsed || parsed.major !== 3) return false;
+  if (parsed.minor >= 16) return false;
+  const line = pythonAdvisory.fixedLines.find((item) => item.minor === parsed.minor);
+  if (!line) return parsed.minor < 11;
+  if (parsed.patch === null) return false;
+  if (parsed.patch !== line.patch) return parsed.patch < line.patch;
+  return parsed.pre;
+}
+
+export function pythonVersionEvidence(version: string): string | undefined {
+  return readPythonVersion(version)?.text;
 }
 
 export function goMissingTrustFix(version: string): boolean {

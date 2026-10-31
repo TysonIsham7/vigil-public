@@ -1,0 +1,20 @@
+{
+  "id": "PYTHON-2026-10-26",
+  "cves": ["CVE-2026-115557", "CVE-2026-114583"],
+  "published": "2026-10-26",
+  "component": "python",
+  "summary": "CPython 3.11.18, 3.12.16, 3.13.18, 3.14.10, and 3.15.2 distrust the compromised eMudhra intermediate keys in the ssl module and reject a tarfile link that replaces the extraction destination. Older builds on those lines do not. A two-component tag on those lines names no patch. Python 3.16 and newer are outside this comparison.",
+  "fixedLines": [
+    { "major": 3, "minor": 15, "patch": 2 },
+    { "major": 3, "minor": 14, "patch": 10 },
+    { "major": 3, "minor": 13, "patch": 18 },
+    { "major": 3, "minor": 12, "patch": 16 },
+    { "major": 3, "minor": 11, "patch": 18 }
+  ],
+  "remediation": "Install Python 3.15.2, 3.14.10, 3.13.18, 3.12.16, or 3.11.18, or a newer build on that same line. A 3.10 or older install has no release on its line that includes this denylist.",
+  "sources": [
+    "https://blog.python.org/2026/10/python-3152-31410-31318-31216-31118/",
+    "https://www.python.org/downloads/",
+    "https://nvd.nist.gov/vuln/detail/CVE-2026-115557"
+  ]
+}

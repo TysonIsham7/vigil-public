@@ -1,4 +1,4 @@
-import { assessKernel, curlAdvisory, curlAffected, goAdvisory, goMissingTrustFix, kernelAdvisory, litellmAdvisory, nginxAdvisory, nginxMissingSecurityRelease, nodeAdvisory, nodeMissingSecurityRelease, pipAdvisory, pipMissingCertifiFix, uvMissingCertifiFix } from "@vigil/intel";
+import { assessKernel, curlAdvisory, curlAffected, goAdvisory, goMissingTrustFix, kernelAdvisory, litellmAdvisory, nginxAdvisory, nginxMissingSecurityRelease, nodeAdvisory, nodeMissingSecurityRelease, pipAdvisory, pipMissingCertifiFix, pythonAdvisory, pythonMissingSecurityRelease, pythonVersionEvidence, uvMissingCertifiFix } from "@vigil/intel";
 import type { Finding } from "@vigil/core";
 import { dockerImageName, parseDockerImages, type ImageRef } from "./deps.js";
 import { netFinding } from "./finding.js";
@@ -17,6 +17,7 @@ export function assessToolchain(input: {
   nginxVersion?: string | null;
   pipVersion?: string | null;
   uvVersion?: string | null;
+  pythonVersion?: string | null;
   kernelRelease?: string | null;
   kernelOs?: string | null;
   trustBundles?: TrustBundle[];
@@ -116,6 +117,21 @@ export function assessToolchain(input: {
       evidence: uv,
     }));
   }
+  const python = input.pythonVersion ? pythonVersionEvidence(input.pythonVersion) : undefined;
+  if (input.pythonVersion && python && pythonMissingSecurityRelease(input.pythonVersion)) {
+    findings.push(netFinding({
+      id: "TOOLCHAIN_PYTHON",
+      severity: "high",
+      title: "Local Python is below the 26 October 2026 security release",
+      summary: `Python ${python} is not a fixed build. Use 3.15.2, 3.14.10, 3.13.18, 3.12.16, or 3.11.18, or a newer build on that line. A 3.10 or older install has no release on its line that includes this fix.`,
+      why: "Those releases distrust the compromised eMudhra intermediates in the ssl module (CVE-2026-115557) and reject a tarfile link that replaces the destination (CVE-2026-114583). A tag with no patch on 3.11 through 3.15 is left alone. An explicit patch, including 0, is compared with that floor. A pre-release of the floor is still below it. A distributor may have backported the fix without changing this version string. This is a report about the machine running vigil doctor. It does not block a deploy.",
+      remediation: [pythonAdvisory.remediation],
+      recommendationOnly: true,
+      category: "toolchain",
+      file: "(local)",
+      evidence: python,
+    }));
+  }
   if (input.kernelRelease && isLinux(input.kernelOs)) {
     const kernel = kernelFinding(input.kernelRelease);
     if (kernel) findings.push(kernel);
@@ -126,6 +142,7 @@ export function assessToolchain(input: {
     const curlImage = /curl/i.test(image.image) && tag && curlAffected(tag);
     const goImage = /golang|^go(?::|\/)/i.test(image.image) && tag && goMissingTrustFix(tag);
     const nginxImage = isNginxImage(image.image) && nginxMissingSecurityRelease(image.tag);
+    const pythonImage = dockerImageName(image.image) === "python" && image.tag !== "" && pythonMissingSecurityRelease(image.tag);
     if (curlImage || goImage || nginxImage) {
       const kind = curlImage ? "a curl" : goImage ? "a Go" : "an nginx";
       findings.push(netFinding({
@@ -135,6 +152,21 @@ export function assessToolchain(input: {
         summary: `${image.image} matches ${kind} advisory range.`,
         why: "Doctor reports the image. It does not build or run it.",
         remediation: [curlImage ? curlAdvisory.remediation : goImage ? goAdvisory.remediation : nginxAdvisory.remediation],
+        recommendationOnly: true,
+        category: "toolchain",
+        file: image.source,
+        line: image.line,
+        evidence: image.image,
+      }));
+    }
+    if (pythonImage) {
+      findings.push(netFinding({
+        id: "TOOLCHAIN_IMAGE",
+        severity: "high",
+        title: "Container base image is missing a toolchain fix",
+        summary: `${image.image} is below the 26 October 2026 CPython security release.`,
+        why: "Doctor reports the image. It does not build or run it. A tag that names no patch on 3.11 through 3.15 is left alone. An explicit patch, including 0, is compared with the advisory floor.",
+        remediation: [pythonAdvisory.remediation],
         recommendationOnly: true,
         category: "toolchain",
         file: image.source,
