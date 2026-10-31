@@ -39,7 +39,7 @@ export {
   queryOsv,
 } from "./deps.js";
 export type { ImageRef, ManifestDep, OsvHit, PackageRef } from "./deps.js";
-export { assessToolchain, imagesFromDockerfiles, kernelFinding, sharedHostFinding, trustStoreFindings, versionToken } from "./doctor.js";
+export { assessToolchain, imagesFromDockerfiles, kernelFinding, kernelSharedFragFinding, sharedHostFinding, trustStoreFindings, versionToken } from "./doctor.js";
 export { collectTrustBundles, distrustedInBundle } from "./truststore.js";
 export type { TrustBundle, TrustHit } from "./truststore.js";
 export { pinAddress, pinnedLookup, safeFetch, systemLookup } from "./fetch.js";

@@ -2,6 +2,7 @@ import axiosAdvisory from "../advisories/axios-2026-03-31.json" with { type: "js
 import curlAdvisory from "../advisories/curl-cve-2026-92392.json" with { type: "json" };
 import goAdvisory from "../advisories/go-1.27.3-emudhra.json" with { type: "json" };
 import kernelAdvisory from "../advisories/kernel-cve-2026-99999.json" with { type: "json" };
+import kernelSharedFragAdvisory from "../advisories/kernel-cve-2026-46300.json" with { type: "json" };
 import litellmAdvisory from "../advisories/litellm-1.107.0.json" with { type: "json" };
 import mcpSdkAdvisory from "../advisories/mcp-sdk-1.32.0.json" with { type: "json" };
 import nginxAdvisory from "../advisories/nginx-2026-10-14.json" with { type: "json" };
@@ -16,6 +17,7 @@ export {
   curlAdvisory,
   goAdvisory,
   kernelAdvisory,
+  kernelSharedFragAdvisory,
   litellmAdvisory,
   mcpSdkAdvisory,
   nginxAdvisory,
@@ -437,6 +439,26 @@ export function assessKernel(text: string): KernelAssessment | undefined {
   const introduced = parseVersion(kernelAdvisory.introduced);
   if (cmpVersion(parsed, [7, 3, 0]) >= 0) return { version, affected: false };
   const line = kernelAdvisory.fixedLines.find((item) => item.major === parsed[0] && item.minor === parsed[1]);
+  if (line) {
+    const fixedIn = `${line.major}.${line.minor}.${line.patch}`;
+    return { version, affected: (parsed[2] ?? 0) < line.patch, fixedIn };
+  }
+  if (introduced && cmpVersion(parsed, introduced) < 0) return { version, affected: false };
+  return { version, affected: true };
+}
+
+/**
+ * CVE-2026-46300. Same uname limit as PwnEscape: a backport can land
+ * without changing the version string this function reads.
+ */
+export function assessKernelSharedFrag(text: string): KernelAssessment | undefined {
+  const version = kernelRelease(text);
+  const parsed = version ? parseVersion(version) : null;
+  if (!version || !parsed) return undefined;
+  const introduced = parseVersion(kernelSharedFragAdvisory.introduced);
+  const mainline = parseVersion(kernelSharedFragAdvisory.mainlineFixed);
+  if (mainline && cmpVersion(parsed, mainline) >= 0) return { version, affected: false };
+  const line = kernelSharedFragAdvisory.fixedLines.find((item) => item.major === parsed[0] && item.minor === parsed[1]);
   if (line) {
     const fixedIn = `${line.major}.${line.minor}.${line.patch}`;
     return { version, affected: (parsed[2] ?? 0) < line.patch, fixedIn };
