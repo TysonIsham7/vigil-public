@@ -275,6 +275,30 @@ describe("doctor toolchain", () => {
     expect(buildReport({ findings, sourceType: "files", filesAnalyzed: 1, bytesAnalyzed: 0, intelVersion: "test" }).blockDeploy).toBe(false);
   });
 
+  it("skips a FROM platform flag and still reports python 3.12.15", () => {
+    const digest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    const images = parseDockerImages("Dockerfile", [
+      "FROM --platform=linux/amd64 python:3.12.15",
+      "FROM --platform linux/amd64 python:3.12.15@" + `sha256:${digest}`,
+      "FROM --platform=linux/amd64 python:3.12",
+      "FROM --platform=linux/amd64 python:3.12.16 AS app",
+      "FROM scratch",
+    ].join("\n"));
+    expect(images.map((image) => ({ image: image.image, tag: image.tag }))).toEqual([
+      { image: "python:3.12.15", tag: "3.12.15" },
+      { image: `python:3.12.15@sha256:${digest}`, tag: "3.12.15" },
+      { image: "python:3.12", tag: "3.12" },
+      { image: "python:3.12.16", tag: "3.12.16" },
+    ]);
+    const findings = assessToolchain({ images }).filter((finding) => finding.id === "TOOLCHAIN_IMAGE");
+    expect(findings.map((finding) => finding.evidence)).toEqual([
+      "python:3.12.15",
+      `python:3.12.15@sha256:${digest}`,
+    ]);
+    expect(findings.every((finding) => finding.severity === "high" && finding.recommendationOnly)).toBe(true);
+    expect(buildReport({ findings, sourceType: "files", filesAnalyzed: 1, bytesAnalyzed: 0, intelVersion: "test" }).blockDeploy).toBe(false);
+  });
+
   it("reports an affected uname and a trust store that still has an eMudhra key", () => {
     const pem = intermediatePems()[0]?.pem ?? "";
     const findings = assessToolchain({
