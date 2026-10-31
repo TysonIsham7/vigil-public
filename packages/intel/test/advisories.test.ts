@@ -10,6 +10,7 @@ import {
   isVulnerableMcpSdk,
   nginxMissingSecurityRelease,
   nodeMissingSecurityRelease,
+  pythonMissingSecurityRelease,
   litellmImage,
   classifyPhpHeaders,
   phpAdvisory,
@@ -163,6 +164,39 @@ describe("advisories", () => {
     expect(nginxMissingSecurityRelease("1.32.0")).toBe(false);
     expect(nginxMissingSecurityRelease("0.1.28")).toBe(false);
     expect(nginxMissingSecurityRelease("0.1.29")).toBe(true);
+  });
+
+  it("flags CPython below the 26 October 2026 floors without padding or swallowing a pre-release", () => {
+    expect(pythonMissingSecurityRelease("Python 3.15.1")).toBe(true);
+    expect(pythonMissingSecurityRelease("3.15.2")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.14.9")).toBe(true);
+    expect(pythonMissingSecurityRelease("3.14.10")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.13.17")).toBe(true);
+    expect(pythonMissingSecurityRelease("3.13.18")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.12.15")).toBe(true);
+    expect(pythonMissingSecurityRelease("3.12.16")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.11.17")).toBe(true);
+    expect(pythonMissingSecurityRelease("3.11.18")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.10.14")).toBe(true);
+    expect(pythonMissingSecurityRelease("3.10")).toBe(true);
+    expect(pythonMissingSecurityRelease("3.10-alpine")).toBe(true);
+    expect(pythonMissingSecurityRelease("3.16.0")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.16")).toBe(false);
+    expect(pythonMissingSecurityRelease("2.7.18")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.12")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.12-slim")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.11")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.13")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.14")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.15")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.12.0")).toBe(true);
+    expect(pythonMissingSecurityRelease("Python 3.12.16rc1")).toBe(true);
+    expect(pythonMissingSecurityRelease("3.15.2a1")).toBe(true);
+    expect(pythonMissingSecurityRelease("3.12.16b1")).toBe(true);
+    expect(pythonMissingSecurityRelease("3.12.16.dev1")).toBe(true);
+    expect(pythonMissingSecurityRelease("3.12.16+")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.12.16+local")).toBe(false);
+    expect(pythonMissingSecurityRelease("3.14.0a1")).toBe(true);
   });
 
   it("flags pip and uv from before the eMudhra certifi update", () => {

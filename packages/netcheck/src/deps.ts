@@ -54,12 +54,26 @@ export function dockerImageTag(ref: string): string {
   return colon >= 0 ? last.slice(colon + 1) : "";
 }
 
+/** Image reference after FROM flags. `--platform=linux/amd64` and `--platform linux/amd64` are both skipped. */
+function fromImageReference(line: string): string | null {
+  const match = /^\s*FROM\s+(\S.*)$/i.exec(line);
+  if (!match?.[1]) return null;
+  const tokens = match[1].trim().split(/\s+/);
+  let index = 0;
+  while (index < tokens.length && (tokens[index] ?? "").startsWith("--")) {
+    const flag = tokens[index] ?? "";
+    index += flag.includes("=") ? 1 : 2;
+  }
+  const image = tokens[index];
+  if (!image || image.toLowerCase() === "as") return null;
+  return image;
+}
+
 export function parseDockerImages(name: string, content: string): ImageRef[] {
   const images: ImageRef[] = [];
   const lines = content.split("\n");
   for (let index = 0; index < lines.length; index++) {
-    const match = /^\s*FROM\s+([^\s]+)/i.exec(lines[index] ?? "");
-    const image = match?.[1];
+    const image = fromImageReference(lines[index] ?? "");
     if (!image || image.toLowerCase() === "scratch") continue;
     images.push({ image, tag: dockerImageTag(image), source: name, line: index + 1 });
   }

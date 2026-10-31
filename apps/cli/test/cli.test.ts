@@ -104,6 +104,7 @@ describe("cli", () => {
         go: "go version go1.27.3 linux/amd64",
         kernel: "6.12.94+",
         kernelOs: "Linux",
+        python: "Python 3.12.16rc1",
       },
       trustBundles: [{ label: "node", pem }],
       trustAudit: quietTrust,
@@ -117,6 +118,7 @@ describe("cli", () => {
     expect(report.findings.some((finding) => finding.id === "KERNEL_CVE_2026_99999" && finding.evidence === "6.12.94")).toBe(true);
     expect(report.findings.some((finding) => finding.id === "TRUSTSTORE_EMUDHRA" && finding.recommendationOnly)).toBe(true);
     expect(report.findings.some((finding) => finding.id === "TOOLCHAIN_GO")).toBe(false);
+    expect(report.findings.some((finding) => finding.id === "TOOLCHAIN_PYTHON" && finding.evidence === "3.12.16rc1" && finding.recommendationOnly)).toBe(true);
     expect(output.text()).not.toContain("BEGIN CERTIFICATE");
   });
 

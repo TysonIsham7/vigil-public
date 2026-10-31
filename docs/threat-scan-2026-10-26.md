@@ -29,8 +29,15 @@ On 22 October 2026 the Python security announcement, relayed on oss-security, sa
 
 A local `pip --version` below 26.2.2 is `TOOLCHAIN_PIP`. A local `uv --version` below 0.13.4 is `TOOLCHAIN_UV`. Both are recommendation-only.
 
-## Left out on purpose
+## CPython 3.11.18, 3.12.16, 3.13.18, 3.14.10, and 3.15.2
 
-CVE-2026-115557 (CPython ssl denylist, 24 October 2026) says affected before 3.16.0. python.org lists 3.16 as a pre-release. Doctor does not compare `python --version` with 3.16.0. The follow-up is in `docs/TODO.md`.
+Python published those releases for CVE-2026-115557 (the ssl denylist for the compromised eMudhra intermediates) and CVE-2026-114583 (`tarfile` rejecting a link that replaces the destination). `www.python.org/downloads/` dates the files 25 October 2026. The 26 October Python Insider post names all five. NVD's record, last modified 26 October 2026 at 01:17 UTC, still says 3.14 is affected until 3.16.0. This check follows the python.org post and does not compare a local Python with 3.16.0.
+
+- Source: [Python Insider, 26 October 2026](https://blog.python.org/2026/10/python-3152-31410-31318-31216-31118/)
+- Releases: [python.org downloads](https://www.python.org/downloads/)
+
+`vigil doctor` reports `TOOLCHAIN_PYTHON` for a local interpreter below the floor on 3.11–3.15, and for Python 3.10 or older. A Dockerfile `python` tag in that range is `TOOLCHAIN_IMAGE`. Both stay recommendation-only. A two-component tag on 3.11–3.15 is not padded to patch 0. An explicit patch, including `3.12.0`, is compared with the floor. `a`, `b`, `rc`, and `.dev` on a floor version are still below it. A final release and a `+` local build of that triple are not. The tag is the colon in the last path segment after `@digest` is removed, so `python:3.12.15@sha256:…` and `localhost:5000/python:3.12.15` keep `3.12.15`.
+
+## Left out on purpose
 
 Also left out, and listed in `docs/TODO.md`: CISA KEV entries for Collabora Online and Arista VeloCloud Orchestrator, private CA bundles inside MongoDB Compass and BigFix, and WordPress plugin CVEs that are not WordPress core. No remote probe was added for those.

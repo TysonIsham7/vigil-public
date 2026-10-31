@@ -1,1 +1,1 @@
-export const INTEL_VERSION = "2026.10.26.2";
+export const INTEL_VERSION = "2026.10.31.1";
