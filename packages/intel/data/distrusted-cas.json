@@ -1,11 +1,11 @@
 {
   "version": "2026.10.21",
   "generatedFrom": "public incident records dated 2026-10-20; fingerprints recomputed from the published certificates",
-  "policy": "A chain containing any block-listed SPKI or certificate fingerprint is a critical deploy block. SPKI matching covers Sectigo cross-signs of the same key. AAA Certificate Services and emSign Root TLS CA - G3 are recorded because they signed affected certificates, and are not blanket-distrusted: other subscribers chain through them. emSign ECC Root CA - G3 stays block-listed. On 27 October 2026 at 15:04 UTC the Chrome post still said removal was expected Tuesday morning PDT and had not recorded that it shipped. Re-check after 2026-10-28 before changing this file.",
+  "policy": "A chain containing any block-listed SPKI or certificate fingerprint is a critical deploy block. SPKI matching covers Sectigo cross-signs of the same key. AAA Certificate Services and emSign Root TLS CA - G3 are recorded because they signed affected certificates, and are not blanket-distrusted: other subscribers chain through them. emSign ECC Root CA - G3 stays block-listed. On 27 October 2026 at 15:04 UTC the Chrome post still said removal was expected Tuesday morning PDT and had not recorded that it shipped. On 28 October 2026 that post still said the same, and the 27 October Chrome 156 stable notes do not record that root leaving the store. The 29 October 2026 re-check left the block in place. Re-check after 2026-11-05 before changing this file.",
   "followUps": [
     {
-      "after": "2026-10-28",
-      "item": "Re-checked on 27 October 2026 at 15:04 UTC. The Chrome post still says emSign ECC Root CA - G3 removal is expected Tuesday morning, 27 October 2026 PDT, and does not say it has shipped. Keep the block. Re-check after 28 October 2026 before changing this file."
+      "after": "2026-11-05",
+      "item": "Re-checked on 27 October 2026 at 15:04 UTC and again on 28 October 2026. The Chrome post still says emSign ECC Root CA - G3 removal is expected Tuesday morning, 27 October 2026 PDT, and does not say it has shipped. The Chrome 156 stable notes from 27 October do not record the root leaving the store. The 29 October 2026 re-check left the block in place. Keep the block. Re-check after 5 November 2026 before changing this file."
     }
   ],
   "testHost": "https://dv-g3b-emudhra.we-have-a-problem.com/",
@@ -359,7 +359,7 @@
       "name": "emSign ECC Root CA - G3",
       "operator": "eMudhra Technologies Limited",
       "action": "block",
-      "reason": "Chrome Root Store removal. The Chrome Root Program said this root signed the compromised CA certificates and that removal ships for Chrome Root Store clients on 2026-10-27 PDT (sooner on Canary and Beta).",
+      "reason": "Chrome Root Store removal. The Chrome Root Program said this root signed the compromised CA certificates and that removal was expected for Chrome Root Store clients on 2026-10-27 PDT (sooner on Canary and Beta). A 28 October 2026 re-check of that post and of the Chrome 156 stable notes did not record that the removal had shipped. The 29 October 2026 re-check left the block in place.",
       "sha256": "86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b",
       "spkiSha256": "8d417db2dd8bf5e3084d1e3f196d583849d81bdd4c00c70b9d39369e96b8c782",
       "sources": [

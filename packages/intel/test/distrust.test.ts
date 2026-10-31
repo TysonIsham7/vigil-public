@@ -34,7 +34,7 @@ describe("distrusted CAs", () => {
       expect(row.pem).not.toContain("PRIVATE KEY");
     }
     expect(distrusted.roots.find((root) => root.name === "AAA Certificate Services")?.action).toBe("record-only");
-    expect(distrusted.followUps[0]?.after).toBe("2026-10-28");
+    expect(distrusted.followUps[0]?.after).toBe("2026-11-05");
     expect(distrusted.followUps[0]?.item).toMatch(/emSign ECC Root CA - G3/);
   });
 
