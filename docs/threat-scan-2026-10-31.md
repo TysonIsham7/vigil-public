@@ -17,9 +17,9 @@ Source: [CISA KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-
 
 ## CVE-2026-98432
 
-The 30 October oss-security reply still says to patch the kernel and does not name an unaffected kernel line. The NVD page timed out. No check was added.
+The 30 October oss-security reply still says to patch the kernel and does not name an unaffected kernel line. A 31 October oss-security message names `init_on_free=1` as interim hardening. That parameter does not fix the bug and is not a substitute for a patched kernel. The message names no unaffected kernel line. This scan did not invent a kernel floor and did not record NVD lines. No boot-parameter check was added. No check was added.
 
-Source: [oss-security, 30 October 2026](https://www.openwall.com/lists/oss-security/2026/10/30/6)
+Source: [oss-security, 30 October 2026](https://www.openwall.com/lists/oss-security/2026/10/30/6), [oss-security, 31 October 2026](https://www.openwall.com/lists/oss-security/2026/10/31/5)
 
 ## Left out on purpose
 
@@ -29,6 +29,6 @@ Source: [oss-security, 30 October 2026](https://www.openwall.com/lists/oss-secur
 
 The same day's index, past the items already recorded on 30 October, also names Starlet before 0.33 (CVE-2026-115865, CVE-2026-115866, CVE-2026-116127, CVE-2026-116128), Business::GoCardless before 1.01 (CVE-2026-119036, CVE-2026-119037, CVE-2026-119038), CallBackery before 0.62.0 (CVE-2026-13576, CVE-2026-118986, CVE-2026-118987, CVE-2026-118990, CVE-2026-118991, CVE-2026-118992, CVE-2026-118993, CVE-2026-118994, CVE-2026-118995, CVE-2026-118996), and Apache Pinot CVE-2026-73322. The Pinot note says 0.7.0 before 1.6.0 and through 1.5.1, and the upgrade line is still the placeholder `[FIXED_VERSION]`. None of those is a page, a certificate, or a toolchain `vigil doctor` already reads.
 
-The 31 October oss-security index names GNU mtools 4.0.50 (CVE-2026-118384), Apache Thrift Java CVE-2026-120135 (fixed in 0.24.0 on that note), and Apache MINA CVE-2026-118636 (3.0.0 through 3.0.0-M2, with no fix planned on that branch). Those are the same kind of gap.
+The 31 October oss-security index names GNU mtools CVE-2026-118384 ([31 October message](https://www.openwall.com/lists/oss-security/2026/10/31/1)). That note quotes the CVE text "GNU mtools through 4.0.49" and lists "Fix CVE-2026-118384" under the 4.0.50 release. 4.0.50 is the fixed release. The affected line on that note is through 4.0.49. The same index names Apache Thrift Java CVE-2026-120135 (fixed in 0.24.0 on that note) and Apache MINA CVE-2026-118636 (3.0.0 through 3.0.0-M2, with no fix planned on that branch). Those are the same kind of gap. No doctor check was added.
 
 php.net's newest 2026 item is still the 26 October Windows Brotli rebuild. The Python blog's newest post is still the 26 October release. python.org still lists 3.15.2, 3.14.10, 3.13.18, 3.12.16, and 3.11.18, dated 25 October 2026. Node's latest security release page is still 21 October 2026. nginx's current fixes are still 1.31.7 and 1.30.6. curl's newest published CVE date is still 14 October 2026. OpenSSL's newest advisory on the vulnerabilities page is still CVE-2026-35189, published 29 September 2026. Chrome's newest desktop stable note is still 29 October 2026 (156.0.8078.79/.80). The emSign ECC Root CA - G3 block was not changed. The next re-check is after 5 November 2026.
