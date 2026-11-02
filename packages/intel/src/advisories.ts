@@ -1,9 +1,13 @@
+import adobeCommerceAdvisory from "../advisories/adobe-commerce-cve-2026-48356.json" with { type: "json" };
 import axiosAdvisory from "../advisories/axios-2026-03-31.json" with { type: "json" };
+import clickhouseAdvisory from "../advisories/clickhouse-cve-2026-116366.json" with { type: "json" };
+import collaboraCodeAdvisory from "../advisories/collabora-code-cve-2026-110447.json" with { type: "json" };
 import curlAdvisory from "../advisories/curl-cve-2026-92392.json" with { type: "json" };
 import goAdvisory from "../advisories/go-1.27.3-emudhra.json" with { type: "json" };
 import kernelAdvisory from "../advisories/kernel-cve-2026-99999.json" with { type: "json" };
 import kernelSharedFragAdvisory from "../advisories/kernel-cve-2026-46300.json" with { type: "json" };
 import litellmAdvisory from "../advisories/litellm-1.107.0.json" with { type: "json" };
+import lmdeployAdvisory from "../advisories/lmdeploy-cve-2026-119706.json" with { type: "json" };
 import mcpSdkAdvisory from "../advisories/mcp-sdk-1.32.0.json" with { type: "json" };
 import nginxAdvisory from "../advisories/nginx-2026-10-14.json" with { type: "json" };
 import nodeAdvisory from "../advisories/node-2026-10-21.json" with { type: "json" };
@@ -13,12 +17,16 @@ import pipAdvisory from "../advisories/pip-26.2.2-emudhra.json" with { type: "js
 import pythonAdvisory from "../advisories/python-2026-10-26.json" with { type: "json" };
 
 export {
+  adobeCommerceAdvisory,
   axiosAdvisory,
+  clickhouseAdvisory,
+  collaboraCodeAdvisory,
   curlAdvisory,
   goAdvisory,
   kernelAdvisory,
   kernelSharedFragAdvisory,
   litellmAdvisory,
+  lmdeployAdvisory,
   mcpSdkAdvisory,
   nginxAdvisory,
   nodeAdvisory,
