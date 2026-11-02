@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  adobeCommerceAdvisory,
   assessKernel,
   assessKernelSharedFrag,
   classifyPhpExposure,
+  clickhouseAdvisory,
+  collaboraCodeAdvisory,
   curlAffected,
   evaluatePhp,
   goMissingTrustFix,
@@ -14,6 +17,7 @@ import {
   nodeMissingSecurityRelease,
   pythonMissingSecurityRelease,
   litellmImage,
+  lmdeployAdvisory,
   classifyPhpHeaders,
   phpAdvisory,
   phpSessionAdvisory,
@@ -295,6 +299,33 @@ describe("advisories", () => {
     expect(isVulnerableMcpSdk("@modelcontextprotocol/sdk", "1.32.2")).toBe(false);
     expect(isVulnerableMcpSdk("@modelcontextprotocol/sdk", "^1.0.0")).toBe(false);
     expect(isVulnerableMcpSdk("axios", "1.14.1")).toBe(false);
+  });
+
+  it("records ClickHouse, LMDeploy, Collabora CODE, and Adobe Commerce without a version probe", () => {
+    expect(clickhouseAdvisory.cve).toBe("CVE-2026-116366");
+    expect(clickhouseAdvisory.fixed).toEqual([
+      "v26.3.62.3-lts",
+      "v26.8.36.3-lts",
+      "v26.9.27.3-stable",
+      "v26.10.3.7-stable",
+    ]);
+    expect(lmdeployAdvisory.cve).toBe("CVE-2026-119706");
+    expect(lmdeployAdvisory.fixed).toEqual([]);
+    expect(lmdeployAdvisory.affected).toBe("0.9.0 through 0.18.0");
+    expect(collaboraCodeAdvisory.cve).toBe("CVE-2026-110447");
+    expect(collaboraCodeAdvisory.fixed).toBe("26.4.303");
+    expect(collaboraCodeAdvisory.knownExploited).toMatch(/26 October 2026/);
+    expect(collaboraCodeAdvisory.knownExploited).toMatch(/Forensic triage is required/);
+    expect(adobeCommerceAdvisory.cve).toBe("CVE-2026-48356");
+    expect(adobeCommerceAdvisory.fixed.magentoOpenSource).toEqual([
+      "2.4.9-2026-jul",
+      "2.4.8-2026-jul",
+      "2.4.7-2026-jul",
+      "2.4.6-2026-jul",
+    ]);
+    expect(adobeCommerceAdvisory.fixed.adobeCommerceEvents).toEqual(["1.21.0"]);
+    expect(adobeCommerceAdvisory.knownExploited).toMatch(/10 November 2026/);
+    expect(adobeCommerceAdvisory.knownExploited).toMatch(/not required/);
   });
 
   it("matches LiteLLM 1.107.0 exactly", () => {

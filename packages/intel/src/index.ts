@@ -1,8 +1,11 @@
 export { INTEL_VERSION } from "./version.js";
 export {
+  adobeCommerceAdvisory,
   assessKernel,
   assessKernelSharedFrag,
   classifyPhpHeaders,
+  clickhouseAdvisory,
+  collaboraCodeAdvisory,
   curlAdvisory,
   curlAffected,
   PHP2SHELL_RULE,
@@ -18,6 +21,7 @@ export {
   kernelRelease,
   litellmAdvisory,
   litellmImage,
+  lmdeployAdvisory,
   nginxAdvisory,
   nginxMissingSecurityRelease,
   nodeAdvisory,

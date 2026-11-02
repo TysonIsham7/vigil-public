@@ -6,9 +6,15 @@ X connector tools were not in this run's catalog. That is a setup gap, not a cre
 
 This automation cannot open a GitHub issue and cannot send email. Unfixed follow-ups are in `docs/TODO.md`. This pull request is the report.
 
+## 2 November oss-security index
+
+The 2 November oss-security index has eleven messages. None of the products below is a page, a certificate, or a toolchain `vigil doctor` already reads. No doctor check was added. No remote probe was added.
+
+Source: [oss-security, 2 November 2026](https://www.openwall.com/lists/oss-security/2026/11/02/)
+
 ## C-Kermit before 11.1.515
 
-The 2 November oss-security index has one message. It describes three C-Kermit advisories that were still awaiting CVE identifiers:
+The first message describes three C-Kermit advisories that were still awaiting CVE identifiers:
 
 - Remote code execution when working with a malicious peer.
 - Authentication bypass and TLS certificate spoofing.
@@ -22,13 +28,76 @@ Source: [oss-security, 2 November 2026](https://www.openwall.com/lists/oss-secur
 
 **Coverage: not covered, and that stays.** The follow-up is in `docs/TODO.md`.
 
-## Already recorded elsewhere
+## CVE-2026-111959
 
-The 1 November oss-security notes for XS-libbrotli before 1.2.1.0 (CVE-2026-115946), HTTP::Session before 0.54 (CVE-2026-13575), Google::Auth 0.12 (CVE-2026-74759 and CVE-2026-74760), and the nineteen Apache Wicket CVEs fixed in 8.20.0, 9.25.0, and 10.12.0 are on draft pull request 10. They were not copied.
+Apache Arrow Rust. Improper validation of RunEndEncoded arrays allows an out-of-bounds read. The message names these affected lines:
 
-The 30 October Ivanti Connect Secure catalog entries stay on draft pull request 9. They were not copied.
+- 60.0.0 before 60.1.0
+- 59.0.0 through 59.3.1
+- 58.0.0 through 58.4.0
+- 33.0.0 through 57.3.1
 
-Open pull request 12 already records CVE-2026-116366 (ClickHouse), CVE-2026-119706 (LMDeploy), CVE-2026-110447 (Collabora Online built-in CODE Server), and CVE-2026-48356 (Adobe Commerce and Magento). Those files were not copied.
+The fixed releases on that note are 60.1.0, 59.3.2, 58.4.1, and 57.3.2.
+
+Source: [oss-security, 2 November 2026](https://www.openwall.com/lists/oss-security/2026/11/02/2)
+
+**Coverage: not covered, and that stays.** The follow-up is in `docs/TODO.md`.
+
+## CVE-2026-119724
+
+Apache JClouds. XML external entity expansion in provider-response parsing. The message says all versions are affected. The project is retired. It names no fixed release and says none is planned.
+
+Source: [oss-security, 2 November 2026](https://www.openwall.com/lists/oss-security/2026/11/02/3)
+
+**Coverage: not covered, and that stays.** The follow-up is in `docs/TODO.md`.
+
+## CVE-2026-119641
+
+Apache Oozie. A workflow rerun bypasses the per-job ACL and reassigns ownership. An authenticated user can reconfigure another tenant's workflow job and change its ownership. The message says all versions are affected. The project is retired. It names no fixed release and says none is planned.
+
+Source: [oss-security, 2 November 2026](https://www.openwall.com/lists/oss-security/2026/11/02/4)
+
+**Coverage: not covered, and that stays.** The follow-up is in `docs/TODO.md`.
+
+## CVE-2026-65059
+
+Furl for Perl, versions through 3.15. Unbounded decompression of a gzip, x-gzip, or deflate HTTP response can exhaust memory. The message says no fixed CPAN release is available. No fixed version was invented.
+
+`vigil doctor` does not read a Perl distribution. No check was added.
+
+Source: [oss-security, 2 November 2026](https://www.openwall.com/lists/oss-security/2026/11/02/5)
+
+**Coverage: not covered, and that stays.** The follow-up is in `docs/TODO.md`.
+
+## libexpat 2.10.0
+
+The subject line says libexpat 2.10.0 fixes two vulnerabilities. The body lists four, fixed in 2.10.0, and names no affected range: CVE-2026-113351, CVE-2026-115506, CVE-2026-117610, and CVE-2026-118370. No affected floor was invented.
+
+Source: [oss-security, 2 November 2026](https://www.openwall.com/lists/oss-security/2026/11/02/6)
+
+**Coverage: not covered, and that stays.** The follow-up is in `docs/TODO.md`.
+
+## Apache Syncope
+
+Five messages name Apache Syncope. Each recommends 4.0.9 and 4.1.4. None names a 3.x fixed release. No doctor check was added. No remote probe was added.
+
+- CVE-2026-109083. Remote code execution via a Flowable JUEL expression in an imported BPMN process. Affected: 3.0.0-M0 through 3.0.16, 4.0.0-M0 through 4.0.8, and 4.1.0 through 4.1.3.
+- CVE-2026-110535. An AuthProfile self-update can set impersonation for WA surrogate authentication. Affected: 3.0.12 through 3.0.16, 4.0.0-M0 through 4.0.8, and 4.1.0-M0 through 4.1.3.
+- CVE-2026-113511. A delegated administrator can move a Realm subtree across administrative boundaries. Affected: 3.0.0-M0 through 3.0.16, 4.0.0-M0 through 4.0.8, and 4.1.0-M0 through 4.1.3.
+- CVE-2026-113687. Remote code execution by bypassing the Groovy sandbox. Affected: 3.0.0-M0 through 3.0.16, 4.0.0-M0 through 4.0.8, and 4.1.0-M0 through 4.1.3.
+- CVE-2026-114364. SQL injection via unsanitized opEvent in Audit Events search. The message says this is an incomplete fix for CVE-2026-77051. Affected: 3.0.0-M0 through 3.0.16, 4.0.0-M0 through 4.0.8, and 4.1.0-M0 through 4.1.3.
+
+Source: [oss-security, 2 November 2026](https://www.openwall.com/lists/oss-security/2026/11/02/7), [message 8](https://www.openwall.com/lists/oss-security/2026/11/02/8), [message 9](https://www.openwall.com/lists/oss-security/2026/11/02/9), [message 10](https://www.openwall.com/lists/oss-security/2026/11/02/10), [message 11](https://www.openwall.com/lists/oss-security/2026/11/02/11)
+
+**Coverage: not covered, and that stays.** The follow-up is in `docs/TODO.md`.
+
+## Already on main
+
+The 1 November note records XS-libbrotli before 1.2.1.0 (CVE-2026-115946), HTTP::Session before 0.54 (CVE-2026-13575), Google::Auth 0.12 (CVE-2026-74759 and CVE-2026-74760), and the nineteen Apache Wicket CVEs fixed in 8.20.0, 9.25.0, and 10.12.0. They were not copied.
+
+The 31 October note records the Ivanti Connect Secure catalog entries. They were not copied.
+
+CVE-2026-116366 (ClickHouse), CVE-2026-119706 (LMDeploy), CVE-2026-110447 (Collabora Online built-in CODE Server), and CVE-2026-48356 (Adobe Commerce and Magento) are already recorded under `packages/intel/advisories/`. Those files were not copied.
 
 ## Left unchanged
 
