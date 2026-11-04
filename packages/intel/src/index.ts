@@ -41,6 +41,9 @@ export {
   pythonMissingSecurityRelease,
   pythonVersionEvidence,
   uvMissingCertifiFix,
+  wordpressCoreAdvisory,
+  wordpressCoreFixedRelease,
+  wordpressCoreVulnerable,
   wordpressReadmeVersion,
   wordpressSignals,
 } from "./advisories.js";

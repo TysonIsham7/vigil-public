@@ -109,4 +109,43 @@ describe("scanUrl", () => {
     expect(owner.report.checks.vulns?.find((row) => row.advisoryId === "PHP-CVE-2026-115560")?.status).toBe("suspected");
     expect(owner.report.checks.vulns?.find((row) => row.advisoryId === "PHP-CVE-2026-115560")?.mitigation).toMatch(/does not block a deploy or hold a page/);
   });
+
+  it("blocks a disclosed WordPress core version below the CVE-2026-119977 line", async () => {
+    const page = (body: string, audience: "owner" | "visitor") => {
+      const fetchImpl: typeof fetch = async () => new Response(body, {
+        status: 200,
+        headers: { "content-security-policy": "default-src 'self'" },
+      });
+      return scanUrl("https://example.com/", {
+        audience,
+        lookup: async () => ["203.0.113.10"],
+        fetchImpl,
+        now,
+        inspectChain: async () => evaluateCertificateChain(
+          [leaf(), { ...leaf(), subject: "CN=Root", issuer: "CN=Root", selfSigned: true, sanDns: [], spkiSha256: "33".repeat(32) }],
+          { host: "example.com", now, trustedSpki: new Set(["33".repeat(32)]) },
+        ),
+      });
+    };
+    const disclosed = (version: string) => `<!doctype html><html><head><meta name="generator" content="WordPress ${version}"><meta http-equiv="Content-Security-Policy" content="default-src 'self'"></head><body>ok</body></html>`;
+    const owner = await page(disclosed("6.7.10"), "owner");
+    const finding = owner.report.findings.find((item) => item.id === "WP_CVE_2026_119977");
+    expect(owner.report.blockDeploy).toBe(true);
+    expect(finding?.recommendationOnly).toBe(false);
+    expect(finding?.severity).toBe("critical");
+    expect(finding?.summary).toMatch(/6\.7\.11/);
+    expect(finding?.why).toMatch(/Known Exploited Vulnerabilities/);
+    expect(owner.report.checks.vulns?.find((row) => row.advisoryId === "WORDPRESS-CVE-2026-119977")?.status).toBe("vulnerable");
+    const visitor = await page(disclosed("6.7.10"), "visitor");
+    expect(visitor.report.blockDeploy).toBe(false);
+    expect(visitor.report.findings.find((item) => item.id === "WP_CVE_2026_119977")?.recommendationOnly).toBe(true);
+    const fixed = await page(disclosed("6.7.11"), "owner");
+    expect(fixed.report.findings.some((item) => item.id === "WP_CVE_2026_119977")).toBe(false);
+    expect(fixed.report.blockDeploy).toBe(false);
+    expect(fixed.report.findings.some((item) => item.id === "WP_FINGERPRINT")).toBe(true);
+    const hidden = await page("<!doctype html><html><head><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self'\"></head><body>wp-content/themes</body></html>", "owner");
+    expect(hidden.report.findings.some((item) => item.id === "WP_FINGERPRINT")).toBe(true);
+    expect(hidden.report.findings.some((item) => item.id === "WP_CVE_2026_119977")).toBe(false);
+    expect(hidden.report.blockDeploy).toBe(false);
+  });
 });

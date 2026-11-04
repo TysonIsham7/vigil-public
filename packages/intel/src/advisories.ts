@@ -15,6 +15,7 @@ import phpAdvisory from "../advisories/php-cve-2026-109618.json" with { type: "j
 import phpSessionAdvisory from "../advisories/php-cve-2026-115560.json" with { type: "json" };
 import pipAdvisory from "../advisories/pip-26.2.2-emudhra.json" with { type: "json" };
 import pythonAdvisory from "../advisories/python-2026-10-26.json" with { type: "json" };
+import wordpressCoreAdvisory from "../advisories/wordpress-cve-2026-119977.json" with { type: "json" };
 
 export {
   adobeCommerceAdvisory,
@@ -34,6 +35,7 @@ export {
   phpSessionAdvisory,
   pipAdvisory,
   pythonAdvisory,
+  wordpressCoreAdvisory,
 };
 
 export const PHP_SESSION_PROGRESS_ID = "PHP_CVE_2026_115560";
@@ -283,6 +285,20 @@ export function wordpressSignals(html: string): { present: boolean; version?: st
 
 export function wordpressReadmeVersion(text: string): string | undefined {
   return /Version\s+(\d+\.\d+(?:\.\d+)?)/i.exec(text)?.[1];
+}
+
+/** Fixed patch on the disclosed WordPress line, when that exact major.minor.patch is still inside the NVD range. */
+export function wordpressCoreFixedRelease(version: string): string | null {
+  const parsed = parseVersion(version);
+  if (!parsed) return null;
+  const [major, minor, patch] = parsed;
+  const line = wordpressCoreAdvisory.fixedLines.find((item) => item.major === major && item.minor === minor);
+  if (!line || patch >= line.patch) return null;
+  return `${line.major}.${line.minor}.${line.patch}`;
+}
+
+export function wordpressCoreVulnerable(version: string): boolean {
+  return wordpressCoreFixedRelease(version) !== null;
 }
 
 export function curlAffected(version: string): boolean {
