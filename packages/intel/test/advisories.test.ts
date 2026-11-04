@@ -26,6 +26,8 @@ import {
   phpVulnerable,
   pipMissingCertifiFix,
   uvMissingCertifiFix,
+  wordpressCoreFixedRelease,
+  wordpressCoreVulnerable,
 } from "../src/index.js";
 
 describe("advisories", () => {
@@ -326,6 +328,22 @@ describe("advisories", () => {
     expect(adobeCommerceAdvisory.fixed.adobeCommerceEvents).toEqual(["1.21.0"]);
     expect(adobeCommerceAdvisory.knownExploited).toMatch(/10 November 2026/);
     expect(adobeCommerceAdvisory.knownExploited).toMatch(/not required/);
+  });
+
+  it("compares a disclosed WordPress core version with the CVE-2026-119977 lines", () => {
+    expect(wordpressCoreVulnerable("6.7.10")).toBe(true);
+    expect(wordpressCoreFixedRelease("6.7.10")).toBe("6.7.11");
+    expect(wordpressCoreVulnerable("6.7.11")).toBe(false);
+    expect(wordpressCoreVulnerable("7.1.3")).toBe(true);
+    expect(wordpressCoreFixedRelease("7.1.3")).toBe("7.1.4");
+    expect(wordpressCoreVulnerable("7.1.4")).toBe(false);
+    expect(wordpressCoreVulnerable("4.7.38")).toBe(true);
+    expect(wordpressCoreFixedRelease("4.7.38")).toBe("4.7.39");
+    expect(wordpressCoreVulnerable("4.7.39")).toBe(false);
+    expect(wordpressCoreVulnerable("4.6.5")).toBe(false);
+    expect(wordpressCoreVulnerable("7.2.0")).toBe(false);
+    expect(wordpressCoreVulnerable("6.7")).toBe(false);
+    expect(wordpressCoreFixedRelease("6.7")).toBeNull();
   });
 
   it("matches LiteLLM 1.107.0 exactly", () => {

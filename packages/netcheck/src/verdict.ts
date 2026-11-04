@@ -1,5 +1,5 @@
 import { NAV_BUDGET_MS, UrlRejected, headerFindings, inspectUrl, tlsRecommendation, type GateSignal } from "@vigil/core";
-import { INTEL_VERSION, assessSite, classifyPhpExposure, evaluatePhp, phpAdvisory, phpSessionProgressNote, wordpressSignals } from "@vigil/intel";
+import { INTEL_VERSION, assessSite, classifyPhpExposure, evaluatePhp, phpAdvisory, phpSessionProgressNote, wordpressCoreAdvisory, wordpressCoreFixedRelease, wordpressSignals } from "@vigil/intel";
 import { anchorSpkiHashes, readMozillaPem } from "./bundle.js";
 import {
   connectCertificateChain,
@@ -163,6 +163,17 @@ function assemble(
       summary: wp.version ? `WordPress ${wp.version} is mentioned in public HTML.` : "The public HTML mentions WordPress.",
       confidence: "medium",
     });
+    const floor = wp.version ? wordpressCoreFixedRelease(wp.version) : null;
+    if (wp.version && floor) {
+      signals.push({
+        id: "WP_CVE_2026_119977",
+        severity: "high",
+        recommendationOnly: true,
+        title: "Upgrade WordPress",
+        summary: `WordPress ${wp.version} is below ${floor} on that release line. CVE-2026-119977 still applies to that line. ${wordpressCoreAdvisory.knownExploited}`,
+        confidence: "high",
+      });
+    }
   }
   return { host, intelVersion: INTEL_VERSION, coverage: "full", signals: dedupe(signals) };
 }

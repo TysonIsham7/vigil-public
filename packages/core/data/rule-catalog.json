@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.29.1",
+  "version": "2026.11.04.1",
   "frameworks": {
     "nistCsf": "2.0",
     "cis": "8.1"
@@ -109,6 +109,7 @@
     "PHP_CVE_2026_115560": { "domain": "application-software", "nist": "ID.RA", "cis": { "control": 7, "safeguard": "7.4", "safeguardTitle": "Perform Automated Application Patch Management" } },
     "PHP2SHELL_EXPOSURE": { "domain": "application-software", "nist": "ID.RA", "cis": { "control": 7, "safeguard": "7.4", "safeguardTitle": "Perform Automated Application Patch Management" } },
     "WP_FINGERPRINT": { "domain": "application-software", "nist": "ID.AM", "cis": { "control": 2, "safeguard": "2.1", "safeguardTitle": "Establish and Maintain a Software Inventory" } },
+    "WP_CVE_2026_119977": { "domain": "application-software", "nist": "ID.RA", "cis": { "control": 7, "safeguard": "7.4", "safeguardTitle": "Perform Automated Application Patch Management" } },
     "DEP_LITELLM_COMPROMISED": { "domain": "emerging-tech", "nist": "GV.SC", "cis": { "control": 16, "safeguard": "16.5", "safeguardTitle": "Use Up-to-Date and Trusted Third-Party Software Components" } },
     "DEP_OSV": { "domain": "application-software", "nist": "ID.RA", "cis": { "control": 7, "safeguard": "7.1", "safeguardTitle": "Establish and Maintain a Vulnerability Management Process" } },
     "TOOLCHAIN_NODE": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },

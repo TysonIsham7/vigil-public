@@ -23,6 +23,8 @@ import {
   phpSessionProgressNote,
   phpSessionUnfixedLine,
   registrableDomain,
+  wordpressCoreAdvisory,
+  wordpressCoreFixedRelease,
   wordpressReadmeVersion,
   wordpressSignals,
 } from "@vigil/intel";
@@ -211,6 +213,7 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
       evidence: php.version ?? "version not disclosed",
     }));
   }
+  const wordpressFloor = wp.version ? wordpressCoreFixedRelease(wp.version) : null;
   if (wp.present) {
     extra.push(netFinding({
       id: "WP_FINGERPRINT",
@@ -223,6 +226,25 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
       category: "vulnerability",
       evidence: wp.version ?? "wordpress",
     }));
+    if (wp.version && wordpressFloor) {
+      extra.push(netFinding({
+        id: "WP_CVE_2026_119977",
+        severity: options.audience === "owner" ? "critical" : "high",
+        title: "Upgrade WordPress",
+        summary: `WordPress ${wp.version} is below ${wordpressFloor} on that release line. CVE-2026-119977 still applies to that line.`,
+        why: `${options.audience === "owner"
+          ? "A confirmed WordPress version on the owner's scan is a critical deploy block."
+          : "A visitor scan warns, because the visitor does not control the server."} ${wordpressCoreAdvisory.knownExploited}`,
+        remediation: [
+          `Upgrade WordPress to ${wordpressFloor} or a later patch on that line.`,
+          wordpressCoreAdvisory.kevAction,
+        ],
+        recommendationOnly: options.audience !== "owner",
+        category: "vulnerability",
+        confidence: "high",
+        evidence: wp.version,
+      }));
+    }
   }
   extra.push(...await agentPageFindings({
     html: page.body,
@@ -307,6 +329,18 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
             status: "fingerprint" as const,
             audience: options.audience,
             level: "info" as const,
+          }]
+        : []),
+      ...(wp.version && wordpressFloor
+        ? [{
+            advisoryId: wordpressCoreAdvisory.id,
+            cves: [...wordpressCoreAdvisory.cves],
+            component: "wordpress",
+            detectedVersion: wp.version,
+            status: "vulnerable" as const,
+            audience: options.audience,
+            level: options.audience === "owner" ? "block" as const : "warn" as const,
+            mitigation: `Upgrade WordPress to ${wordpressFloor} or a later patch on that line.`,
           }]
         : []),
     ],
