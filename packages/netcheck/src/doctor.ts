@@ -1,4 +1,4 @@
-import { assessKernel, assessKernelSharedFrag, curlAdvisory, curlAffected, goAdvisory, goMissingTrustFix, kernelAdvisory, kernelSharedFragAdvisory, litellmAdvisory, nginxAdvisory, nginxMissingSecurityRelease, nodeAdvisory, nodeMissingSecurityRelease, pipAdvisory, pipMissingCertifiFix, pythonAdvisory, pythonMissingSecurityRelease, pythonVersionEvidence, uvMissingCertifiFix } from "@vigil/intel";
+import { assessKernel, assessKernelSharedFrag, curlAdvisory, curlAffected, goAdvisory, goMissingNovemberSecurityRelease, goMissingTrustFix, goNovemberAdvisory, kernelAdvisory, kernelSharedFragAdvisory, litellmAdvisory, nginxAdvisory, nginxMissingSecurityRelease, nodeAdvisory, nodeMissingSecurityRelease, pipAdvisory, pipMissingCertifiFix, pythonAdvisory, pythonMissingSecurityRelease, pythonVersionEvidence, uvMissingCertifiFix } from "@vigil/intel";
 import type { Finding } from "@vigil/core";
 import { dockerImageName, parseDockerImages, type ImageRef } from "./deps.js";
 import { netFinding } from "./finding.js";
@@ -87,6 +87,20 @@ export function assessToolchain(input: {
       evidence: go,
     }));
   }
+  if (go && goMissingNovemberSecurityRelease(go)) {
+    findings.push(netFinding({
+      id: "TOOLCHAIN_GO_2026_11_10",
+      severity: "high",
+      title: "Local Go is below the 10 November 2026 security release",
+      summary: `Go ${go} is older than 1.27.4 and is not on a patched 1.26.11 line.`,
+      why: "Go 1.27.4 and 1.26.11 include 12 security fixes in cgo, the go command, the compiler, the linker, and net/http. NVD lists those identifiers and has no CPE. A distributor may have backported a fix without changing this version string. This is a report about the machine running vigil doctor. It does not block a deploy.",
+      remediation: [goNovemberAdvisory.remediation],
+      recommendationOnly: true,
+      category: "toolchain",
+      file: "(local)",
+      evidence: go,
+    }));
+  }
   const pip = input.pipVersion ? versionToken(input.pipVersion) : undefined;
   if (pip && pipMissingCertifiFix(pip)) {
     findings.push(netFinding({
@@ -142,7 +156,7 @@ export function assessToolchain(input: {
   for (const image of input.images ?? []) {
     const tag = versionToken(image.tag) ?? image.tag;
     const curlImage = /curl/i.test(image.image) && tag && curlAffected(tag);
-    const goImage = /golang|^go(?::|\/)/i.test(image.image) && tag && goMissingTrustFix(tag);
+    const goImage = /golang|^go(?::|\/)/i.test(image.image) && tag && goMissingNovemberSecurityRelease(tag);
     const nginxImage = isNginxImage(image.image) && nginxMissingSecurityRelease(image.tag);
     const pythonImage = dockerImageName(image.image) === "python" && image.tag !== "" && pythonMissingSecurityRelease(image.tag);
     if (curlImage || goImage || nginxImage) {
@@ -153,7 +167,7 @@ export function assessToolchain(input: {
         title: "Container base image is missing a toolchain fix",
         summary: `${image.image} matches ${kind} advisory range.`,
         why: "Doctor reports the image. It does not build or run it.",
-        remediation: [curlImage ? curlAdvisory.remediation : goImage ? goAdvisory.remediation : nginxAdvisory.remediation],
+        remediation: [curlImage ? curlAdvisory.remediation : goImage ? goNovemberAdvisory.remediation : nginxAdvisory.remediation],
         recommendationOnly: true,
         category: "toolchain",
         file: image.source,

@@ -1,0 +1,30 @@
+{
+  "id": "GO-1.27.4",
+  "cves": [
+    "CVE-2026-97033",
+    "CVE-2026-97034",
+    "CVE-2026-97035",
+    "CVE-2026-97036",
+    "CVE-2026-97037",
+    "CVE-2026-97038",
+    "CVE-2026-97039",
+    "CVE-2026-97040",
+    "CVE-2026-97041",
+    "CVE-2026-97042",
+    "CVE-2026-97043",
+    "CVE-2026-97054"
+  ],
+  "published": "2026-11-10",
+  "component": "go",
+  "summary": "Go 1.27.4 and 1.26.11, released 10 November 2026, include 12 security fixes in cgo, the go command, the compiler, the linker, and net/http. The eMudhra trust filter stays on the 1.27.3 and 1.26.10 lines.",
+  "fixedLines": [
+    { "major": 1, "minor": 27, "patch": 4 },
+    { "major": 1, "minor": 26, "patch": 11 }
+  ],
+  "remediation": "Install Go 1.27.4 or, on the 1.26 line, Go 1.26.11, and rebuild programs built with the older toolchain.",
+  "sources": [
+    "https://go.dev/doc/devel/release#go1.27.4",
+    "https://go.dev/doc/devel/release#go1.26.11",
+    "https://www.openwall.com/lists/oss-security/2026/11/10/28"
+  ]
+}
