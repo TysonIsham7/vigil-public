@@ -51,7 +51,7 @@ A whole-token match on `kernel` in the raw feed items for CVE-2026-112532, CVE-2
 
 ## Prior leads now on NVD
 
-The 3 November unverified-lead list is on draft pull request 16. This NVD snapshot contains all 47 of those ids.
+The 3 November unverified-lead list is in `docs/threat-scan-2026-11-03-leads.md`. This NVD snapshot contains all 47 of those ids.
 
 Twenty-seven now have an NVD configuration for `freerdp:freerdp`. FreeRDP is not a runtime or advisory component. They are no longer unverified-lead. No doctor check was added.
 

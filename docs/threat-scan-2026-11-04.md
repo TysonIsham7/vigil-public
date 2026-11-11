@@ -62,9 +62,9 @@ Source: [oss-security, 4 November 2026](https://www.openwall.com/lists/oss-secur
 
 **Coverage for both: not covered, and that stays.** The follow-up is in `docs/TODO.md`.
 
-## 3 November oss-security index, after draft pull request 16
+## 3 November oss-security index, after the CVE-2026-98432 reply
 
-Draft pull request 16 records message 1, the reply on CVE-2026-98432. The index now has 32 messages. Message 1 was not copied again. No kernel floor was changed.
+`docs/threat-scan-2026-11-03.md` records message 1, the reply on CVE-2026-98432. The index now has 32 messages. Message 1 was not copied again. No kernel floor was changed.
 
 Source: [oss-security, 3 November 2026](https://www.openwall.com/lists/oss-security/2026/11/03/)
 
