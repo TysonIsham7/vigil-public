@@ -4,6 +4,7 @@ import clickhouseAdvisory from "../advisories/clickhouse-cve-2026-116366.json" w
 import collaboraCodeAdvisory from "../advisories/collabora-code-cve-2026-110447.json" with { type: "json" };
 import curlAdvisory from "../advisories/curl-cve-2026-92392.json" with { type: "json" };
 import goAdvisory from "../advisories/go-1.27.3-emudhra.json" with { type: "json" };
+import goNovemberAdvisory from "../advisories/go-1.27.4.json" with { type: "json" };
 import kernelAdvisory from "../advisories/kernel-cve-2026-99999.json" with { type: "json" };
 import kernelSharedFragAdvisory from "../advisories/kernel-cve-2026-46300.json" with { type: "json" };
 import litellmAdvisory from "../advisories/litellm-1.107.0.json" with { type: "json" };
@@ -23,6 +24,7 @@ export {
   collaboraCodeAdvisory,
   curlAdvisory,
   goAdvisory,
+  goNovemberAdvisory,
   kernelAdvisory,
   kernelSharedFragAdvisory,
   litellmAdvisory,
@@ -414,6 +416,20 @@ export function goMissingTrustFix(version: string): boolean {
     }
   }
   const newest = goAdvisory.fixedLines[0];
+  if (!newest) return false;
+  return cmpVersion(parsed, [newest.major, newest.minor, newest.patch]) < 0;
+}
+
+/** True below Go 1.27.4, or below 1.26.11 on the 1.26 line. This is not the eMudhra check. */
+export function goMissingNovemberSecurityRelease(version: string): boolean {
+  const parsed = parseVersion(version.replace(/^go/, ""));
+  if (!parsed) return false;
+  for (const line of goNovemberAdvisory.fixedLines) {
+    if (parsed[0] === line.major && parsed[1] === line.minor) {
+      return (parsed[2] ?? 0) < line.patch;
+    }
+  }
+  const newest = goNovemberAdvisory.fixedLines[0];
   if (!newest) return false;
   return cmpVersion(parsed, [newest.major, newest.minor, newest.patch]) < 0;
 }

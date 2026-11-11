@@ -8,6 +8,7 @@ import {
   collaboraCodeAdvisory,
   curlAffected,
   evaluatePhp,
+  goMissingNovemberSecurityRelease,
   goMissingTrustFix,
   isCompromisedAxios,
   isCompromisedLitellm,
@@ -232,6 +233,13 @@ describe("advisories", () => {
     expect(goMissingTrustFix("1.27.2")).toBe(true);
     expect(goMissingTrustFix("1.27.3")).toBe(false);
     expect(goMissingTrustFix("1.28.0")).toBe(false);
+    expect(goMissingNovemberSecurityRelease("go1.27.3")).toBe(true);
+    expect(goMissingNovemberSecurityRelease("1.27.4")).toBe(false);
+    expect(goMissingNovemberSecurityRelease("1.26.10")).toBe(true);
+    expect(goMissingNovemberSecurityRelease("1.26.11")).toBe(false);
+    expect(goMissingNovemberSecurityRelease("1.22.2")).toBe(true);
+    expect(goMissingNovemberSecurityRelease("1.28.0")).toBe(false);
+    expect(goMissingTrustFix("1.27.3")).toBe(false);
   });
 
   it("compares a kernel release to the PwnEscape stable fixes", () => {
