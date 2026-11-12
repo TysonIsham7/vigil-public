@@ -12,6 +12,7 @@ import lmdeployAdvisory from "../advisories/lmdeploy-cve-2026-119706.json" with 
 import mcpSdkAdvisory from "../advisories/mcp-sdk-1.32.0.json" with { type: "json" };
 import nginxAdvisory from "../advisories/nginx-2026-10-14.json" with { type: "json" };
 import nodeAdvisory from "../advisories/node-2026-10-21.json" with { type: "json" };
+import nodeNovemberAdvisory from "../advisories/node-2026-11-11.json" with { type: "json" };
 import phpAdvisory from "../advisories/php-cve-2026-109618.json" with { type: "json" };
 import phpSessionAdvisory from "../advisories/php-cve-2026-115560.json" with { type: "json" };
 import pipAdvisory from "../advisories/pip-26.2.2-emudhra.json" with { type: "json" };
@@ -33,6 +34,7 @@ export {
   mcpSdkAdvisory,
   nginxAdvisory,
   nodeAdvisory,
+  nodeNovemberAdvisory,
   phpAdvisory,
   phpSessionAdvisory,
   pipAdvisory,
@@ -325,6 +327,16 @@ export function nodeMissingSecurityRelease(version: string): boolean {
   const line = nodeAdvisory.fixedLines.find((item) => item.major === parsed[0]);
   if (line) return cmpVersion(parsed, [line.major, line.minor, line.patch]) < 0;
   const newest = nodeAdvisory.fixedLines.reduce((best, item) => (item.major > best.major ? item : best));
+  return parsed[0] < newest.major;
+}
+
+/** True below Node 22.23.5, 24.22.3, or 26.13.1 on those lines, or on an older major. This is not the October check. Node 27 and newer are not compared. */
+export function nodeMissingNovemberSecurityRelease(version: string): boolean {
+  const parsed = parseVersion(version.replace(/^v/, ""));
+  if (!parsed) return false;
+  const line = nodeNovemberAdvisory.fixedLines.find((item) => item.major === parsed[0]);
+  if (line) return cmpVersion(parsed, [line.major, line.minor, line.patch]) < 0;
+  const newest = nodeNovemberAdvisory.fixedLines.reduce((best, item) => (item.major > best.major ? item : best));
   return parsed[0] < newest.major;
 }
 

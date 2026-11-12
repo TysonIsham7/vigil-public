@@ -1,5 +1,5 @@
 {
-  "version": "2026.11.11.1",
+  "version": "2026.11.12.1",
   "frameworks": {
     "nistCsf": "2.0",
     "cis": "8.1"
@@ -113,6 +113,7 @@
     "DEP_LITELLM_COMPROMISED": { "domain": "emerging-tech", "nist": "GV.SC", "cis": { "control": 16, "safeguard": "16.5", "safeguardTitle": "Use Up-to-Date and Trusted Third-Party Software Components" } },
     "DEP_OSV": { "domain": "application-software", "nist": "ID.RA", "cis": { "control": 7, "safeguard": "7.1", "safeguardTitle": "Establish and Maintain a Vulnerability Management Process" } },
     "TOOLCHAIN_NODE": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
+    "TOOLCHAIN_NODE_2026_11_11": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
     "TOOLCHAIN_CURL": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
     "TOOLCHAIN_GO": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
     "TOOLCHAIN_GO_2026_11_10": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
