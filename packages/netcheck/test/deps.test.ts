@@ -168,6 +168,13 @@ describe("doctor toolchain", () => {
     });
     expect(findings.some((finding) => finding.id === "TOOLCHAIN_CURL")).toBe(false);
     expect(findings.some((finding) => finding.id === "TOOLCHAIN_GO" && finding.recommendationOnly)).toBe(true);
+    expect(findings.some((finding) => finding.id === "TOOLCHAIN_GO_2026_11_10" && finding.recommendationOnly)).toBe(true);
+    expect(assessToolchain({ goVersion: "go version go1.27.3 linux/amd64" }).some((finding) => finding.id === "TOOLCHAIN_GO")).toBe(false);
+    expect(assessToolchain({ goVersion: "go version go1.27.3 linux/amd64" }).find((finding) => finding.id === "TOOLCHAIN_GO_2026_11_10")).toMatchObject({ recommendationOnly: true, evidence: "1.27.3" });
+    expect(assessToolchain({ goVersion: "go version go1.27.4 linux/amd64" }).some((finding) => finding.id === "TOOLCHAIN_GO_2026_11_10")).toBe(false);
+    expect(assessToolchain({ goVersion: "go version go1.26.11 linux/amd64" }).some((finding) => finding.id === "TOOLCHAIN_GO_2026_11_10")).toBe(false);
+    expect(assessToolchain({ images: [{ image: "golang:1.27.3", tag: "1.27.3", source: "Dockerfile", line: 1 }] }).some((finding) => finding.id === "TOOLCHAIN_IMAGE")).toBe(true);
+    expect(assessToolchain({ images: [{ image: "golang:1.27.4", tag: "1.27.4", source: "Dockerfile", line: 1 }] }).some((finding) => finding.id === "TOOLCHAIN_IMAGE")).toBe(false);
     expect(findings.filter((finding) => finding.id === "TOOLCHAIN_IMAGE")).toHaveLength(2);
     expect(findings.every((finding) => finding.recommendationOnly)).toBe(true);
     expect(versionToken("8.12")).toBe("8.12.0");
