@@ -185,8 +185,13 @@ describe("doctor toolchain", () => {
     expect(nodeOld.find((finding) => finding.id === "TOOLCHAIN_NODE")?.why).toMatch(/CVE-2026-111497/);
     expect(nodeOld.find((finding) => finding.id === "TOOLCHAIN_NODE")?.remediation.join(" ")).toMatch(/27 October 2026/);
     expect(nodeOk.some((finding) => finding.id === "TOOLCHAIN_NODE")).toBe(false);
+    expect(nodeOk.find((finding) => finding.id === "TOOLCHAIN_NODE_2026_11_11")).toMatchObject({ recommendationOnly: true, evidence: "22.23.4" });
+    expect(assessToolchain({ nodeVersion: "v22.23.5" }).some((finding) => finding.id === "TOOLCHAIN_NODE_2026_11_11")).toBe(false);
     expect(assessToolchain({ nodeVersion: "v24.22.0" }).some((finding) => finding.id === "TOOLCHAIN_NODE")).toBe(true);
+    expect(assessToolchain({ nodeVersion: "v24.22.3" }).some((finding) => finding.id === "TOOLCHAIN_NODE_2026_11_11")).toBe(false);
     expect(assessToolchain({ nodeVersion: "v26.12.1" }).some((finding) => finding.id === "TOOLCHAIN_NODE")).toBe(false);
+    expect(assessToolchain({ nodeVersion: "v26.12.1" }).find((finding) => finding.id === "TOOLCHAIN_NODE_2026_11_11")).toMatchObject({ recommendationOnly: true, evidence: "26.12.1" });
+    expect(assessToolchain({ nodeVersion: "v26.13.1" }).some((finding) => finding.id === "TOOLCHAIN_NODE" || finding.id === "TOOLCHAIN_NODE_2026_11_11")).toBe(false);
     const nginxOld = assessToolchain({ nginxVersion: "nginx version: nginx/1.31.6" });
     const nginxStable = assessToolchain({ nginxVersion: "nginx version: nginx/1.30.6" });
     expect(nginxOld.find((finding) => finding.id === "TOOLCHAIN_NGINX")?.recommendationOnly).toBe(true);

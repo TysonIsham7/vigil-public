@@ -1,4 +1,4 @@
-import { assessKernel, assessKernelSharedFrag, curlAdvisory, curlAffected, goAdvisory, goMissingNovemberSecurityRelease, goMissingTrustFix, goNovemberAdvisory, kernelAdvisory, kernelSharedFragAdvisory, litellmAdvisory, nginxAdvisory, nginxMissingSecurityRelease, nodeAdvisory, nodeMissingSecurityRelease, pipAdvisory, pipMissingCertifiFix, pythonAdvisory, pythonMissingSecurityRelease, pythonVersionEvidence, uvMissingCertifiFix } from "@vigil/intel";
+import { assessKernel, assessKernelSharedFrag, curlAdvisory, curlAffected, goAdvisory, goMissingNovemberSecurityRelease, goMissingTrustFix, goNovemberAdvisory, kernelAdvisory, kernelSharedFragAdvisory, litellmAdvisory, nginxAdvisory, nginxMissingSecurityRelease, nodeAdvisory, nodeMissingNovemberSecurityRelease, nodeMissingSecurityRelease, nodeNovemberAdvisory, pipAdvisory, pipMissingCertifiFix, pythonAdvisory, pythonMissingSecurityRelease, pythonVersionEvidence, uvMissingCertifiFix } from "@vigil/intel";
 import type { Finding } from "@vigil/core";
 import { dockerImageName, parseDockerImages, type ImageRef } from "./deps.js";
 import { netFinding } from "./finding.js";
@@ -35,6 +35,20 @@ export function assessToolchain(input: {
       summary: `Node ${node} is not one of the patched releases. Use Node 22.23.4 or newer on the 22 line, 24.22.1 or newer on the 24 line, or 26.12.1 or newer on the 26 line.`,
       why: `The page fetch uses this Node process, including its Brotli decoder. ${nodeAdvisory.knownExploited} This is a report about the machine running vigil doctor. It does not block a deploy.`,
       remediation: [nodeAdvisory.remediation, nodeAdvisory.kevAction],
+      recommendationOnly: true,
+      category: "toolchain",
+      file: "(local)",
+      evidence: node,
+    }));
+  }
+  if (node && nodeMissingNovemberSecurityRelease(node)) {
+    findings.push(netFinding({
+      id: "TOOLCHAIN_NODE_2026_11_11",
+      severity: "high",
+      title: "Local Node is below the 11 November 2026 security release",
+      summary: `Node ${node} is older than 22.23.5 on the 22 line, 24.22.3 on the 24 line, or 26.13.1 on the 26 line.`,
+      why: "Node.js 22.23.5, 24.22.3, and 26.13.1 are the 11 November 2026 security releases. NVD lists those identifiers and has no CPE. CVE-2026-123873 is named on the release notes and is not in the NVD recent feed. A distributor may have backported a fix without changing this version string. This is a report about the machine running vigil doctor. It does not block a deploy.",
+      remediation: [nodeNovemberAdvisory.remediation],
       recommendationOnly: true,
       category: "toolchain",
       file: "(local)",

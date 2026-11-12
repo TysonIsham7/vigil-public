@@ -15,6 +15,7 @@ import {
   isVulnerableMcpSdk,
   nginxMissingSecurityRelease,
   nodeAdvisory,
+  nodeMissingNovemberSecurityRelease,
   nodeMissingSecurityRelease,
   pythonMissingSecurityRelease,
   litellmImage,
@@ -158,6 +159,17 @@ describe("advisories", () => {
     expect(nodeMissingSecurityRelease("25.0.0")).toBe(true);
     expect(nodeMissingSecurityRelease("20.19.0")).toBe(true);
     expect(nodeMissingSecurityRelease("27.0.0")).toBe(false);
+    expect(nodeMissingNovemberSecurityRelease("22.23.4")).toBe(true);
+    expect(nodeMissingNovemberSecurityRelease("v22.23.5")).toBe(false);
+    expect(nodeMissingNovemberSecurityRelease("24.22.2")).toBe(true);
+    expect(nodeMissingNovemberSecurityRelease("24.22.3")).toBe(false);
+    expect(nodeMissingNovemberSecurityRelease("26.13.0")).toBe(true);
+    expect(nodeMissingNovemberSecurityRelease("26.13.1")).toBe(false);
+    expect(nodeMissingNovemberSecurityRelease("26.12.1")).toBe(true);
+    expect(nodeMissingNovemberSecurityRelease("20.19.0")).toBe(true);
+    expect(nodeMissingNovemberSecurityRelease("27.0.0")).toBe(false);
+    expect(nodeMissingSecurityRelease("22.23.4")).toBe(false);
+    expect(nodeMissingSecurityRelease("26.13.1")).toBe(false);
     expect(nodeAdvisory.knownExploited).toMatch(/27 October 2026/);
     expect(nodeAdvisory.knownExploited).toMatch(/2026\.10\.27/);
     expect(nodeAdvisory.knownExploited).toMatch(/CVE-2026-111497/);
