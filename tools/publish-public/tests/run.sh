@@ -36,6 +36,18 @@ ok() {
   PASS=$((PASS + 1))
 }
 
+# Same shape as pp_slug: drop .git, a trailing slash, the scheme, and any userinfo.
+publish_slug() {
+  local u=$1
+  u=${u%.git}
+  u=${u%/}
+  case $u in
+    *://*) u=${u#*://} ;;
+  esac
+  u=${u#*@}
+  printf '%s' "$u" | tr '[:upper:]' '[:lower:]'
+}
+
 field() {
   local key=$1 file=$2 line
   line=$(grep -E "^${key}:" "$file" | head -n 1)
@@ -498,13 +510,32 @@ test_worktree
 test_refuse
 test_drop
 
-# Vigil dry run. This reads the public mirror and does not push.
+# Vigil dry run. On a private checkout, origin and public_remote differ, so this
+# scans the tree and does not push. On the public mirror they are the same
+# repository. pp_refuse_same_repo must refuse that before any fetch or push.
+# The test expects that refusal. It does not change the guard.
 vigil_dry_run() {
   local deny=$TMP/vigil.denylist report=$TMP/vigil-report.txt head before
+  local origin remote
   cp "$ROOT/tools/publish-public/examples/denylist.example" "$deny"
   head=$(git -C "$ROOT" rev-parse HEAD)
   before=$(git -C "$ROOT" status --porcelain)
+  origin=$(git -C "$ROOT" remote get-url origin 2>/dev/null || true)
+  remote=$(field public_remote "$CONFIG")
   run_publish "$ROOT" --denylist "$deny" --report "$report"
+  if [ -n "$origin" ] && [ "$(publish_slug "$origin")" = "$(publish_slug "$remote")" ]; then
+    if [ "$PUBLISH_STATUS" -ne 1 ]; then
+      die "vigil dry-run (exit $PUBLISH_STATUS, wanted 1)"
+    elif ! printf '%s\n' "$PUBLISH_OUT" | grep -q 'public_remote is this repository. Refusing.'; then
+      die "vigil dry-run did not refuse to publish this repository to itself"
+    elif [ "$(git -C "$ROOT" rev-parse HEAD)" != "$head" ]; then
+      die "vigil dry-run moved HEAD"
+    elif [ "$(git -C "$ROOT" status --porcelain)" != "$before" ]; then
+      die "vigil dry-run changed the worktree"
+    fi
+    ok "vigil dry-run refuses to publish this repository to itself"
+    return 0
+  fi
   assert_status 0 "vigil dry-run" || return 0
   printf '%s\n' "$PUBLISH_OUT" | grep -q 'Nothing was pushed' || die "vigil dry-run did not stay local"
   [ "$(git -C "$ROOT" rev-parse HEAD)" = "$head" ] || die "vigil dry-run moved HEAD"
