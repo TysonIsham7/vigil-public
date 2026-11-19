@@ -101,12 +101,13 @@ describe("scanUrl", () => {
     expect(owner.report.findings.some((finding) => finding.id === "PHP_CVE_2026_109618")).toBe(false);
     const note = owner.report.findings.find((finding) => finding.id === "PHP_CVE_2026_115560");
     expect(note?.recommendationOnly).toBe(true);
-    expect(note?.severity).toBe("informational");
+    expect(note?.severity).toBe("high");
     expect(note?.summary).toMatch(/8\.5\.12/);
-    expect(note?.summary).toMatch(/has not published a fixed version/);
+    expect(note?.summary).toMatch(/8\.5\.13/);
+    expect(note?.summary).not.toMatch(/has not published a fixed version/);
     expect(note?.remediation.join(" ")).toMatch(/does not block a deploy or hold a page/);
     expect(owner.report.findings.find((finding) => finding.id === "PHP2SHELL_EXPOSURE")?.title).toBe("PHP2Shell: patched");
-    expect(owner.report.checks.vulns?.find((row) => row.advisoryId === "PHP-CVE-2026-115560")?.status).toBe("suspected");
+    expect(owner.report.checks.vulns?.find((row) => row.advisoryId === "PHP-CVE-2026-115560")?.status).toBe("vulnerable");
     expect(owner.report.checks.vulns?.find((row) => row.advisoryId === "PHP-CVE-2026-115560")?.mitigation).toMatch(/does not block a deploy or hold a page/);
   });
 

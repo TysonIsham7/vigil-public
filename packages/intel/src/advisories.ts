@@ -11,6 +11,7 @@ import litellmAdvisory from "../advisories/litellm-1.107.0.json" with { type: "j
 import lmdeployAdvisory from "../advisories/lmdeploy-cve-2026-119706.json" with { type: "json" };
 import mcpSdkAdvisory from "../advisories/mcp-sdk-1.32.0.json" with { type: "json" };
 import nginxAdvisory from "../advisories/nginx-2026-10-14.json" with { type: "json" };
+import nginxNovemberAdvisory from "../advisories/nginx-2026-11-18.json" with { type: "json" };
 import nodeAdvisory from "../advisories/node-2026-10-21.json" with { type: "json" };
 import phpAdvisory from "../advisories/php-cve-2026-109618.json" with { type: "json" };
 import phpSessionAdvisory from "../advisories/php-cve-2026-115560.json" with { type: "json" };
@@ -32,6 +33,7 @@ export {
   lmdeployAdvisory,
   mcpSdkAdvisory,
   nginxAdvisory,
+  nginxNovemberAdvisory,
   nodeAdvisory,
   phpAdvisory,
   phpSessionAdvisory,
@@ -69,10 +71,37 @@ export function phpVulnerable(version: string): boolean {
 
 /** Names CVE-2026-115560 on an upgrade finding. It does not say the note is non-blocking. */
 export function phpSessionUnfixedLine(): string {
-  return "CVE-2026-115560 has no fixed PHP release yet. The 21 October 2026 releases do not close it.";
+  return "CVE-2026-115560 is fixed in PHP 8.2.36, 8.3.37, 8.4.28, 8.5.13, and 8.6.0. The 21 October 2026 releases do not close it.";
 }
 
-/** Informational note for CVE-2026-115560. PHP has not published a fixed version. */
+/**
+ * True on PHP 8.2 through 8.5 below the 19 November 2026 security release.
+ * PHP 8.6 and newer are not compared with 8.6.0. PHP 8.1 and older stay on the October check.
+ */
+export function phpMissingNovemberSecurityRelease(version: string): boolean {
+  const parsed = parseVersion(version);
+  if (!parsed) return false;
+  const [major, minor, patch] = parsed;
+  if (major !== 8 || minor <= 1 || minor >= 6) return false;
+  const line = phpSessionAdvisory.fixed.find((item) => item.major === major && item.minor === minor);
+  if (!line) return false;
+  return (patch ?? 0) < line.patch;
+}
+
+/** Version comparison for CVE-2026-115560 after the 19 November 2026 releases. */
+export function phpNovemberReleaseStatus(version: string | undefined): "vulnerable" | "fixed" | "unknown" {
+  if (!version) return "unknown";
+  if (phpMissingNovemberSecurityRelease(version)) return "vulnerable";
+  const parsed = parseVersion(version);
+  if (!parsed) return "unknown";
+  const [major, minor, patch] = parsed;
+  if (major > 8 || (major === 8 && minor >= 6)) return "fixed";
+  const line = phpSessionAdvisory.fixed.find((item) => item.major === major && item.minor === minor);
+  if (line && (patch ?? 0) >= line.patch) return "fixed";
+  return "unknown";
+}
+
+/** Version comparison for CVE-2026-115560. It does not block a deploy. */
 export function phpSessionProgressNote(version?: string): {
   id: typeof PHP_SESSION_PROGRESS_ID;
   title: string;
@@ -80,12 +109,12 @@ export function phpSessionProgressNote(version?: string): {
   remediation: string[];
 } {
   const prefix = version
-    ? `PHP ${version} meets the 21 October 2026 releases. Those releases do not close CVE-2026-115560. `
-    : "PHP was detected. CVE-2026-115560 has no patched release yet. ";
+    ? `PHP ${version} is below the 19 November 2026 security release. `
+    : "PHP was detected. ";
   return {
     id: PHP_SESSION_PROGRESS_ID,
-    title: "PHP session upload progress",
-    summary: `${prefix}PHP has not published a fixed version. This note does not mean the unusual session configuration is present.`,
+    title: "PHP 19 November 2026 security release",
+    summary: `${prefix}CVE-2026-115560 is fixed in 8.2.36, 8.3.37, 8.4.28, 8.5.13, and 8.6.0. The 21 October 2026 releases do not close it.`,
     remediation: [phpSessionAdvisory.mitigation],
   };
 }
@@ -349,6 +378,29 @@ export function nginxMissingSecurityRelease(version: string): boolean {
   const mainline = nginxAdvisory.fixedLines.find((item) => item.major === 1 && item.minor === 31);
   if (mainline && cmpVersion(concrete, [mainline.major, mainline.minor, mainline.patch]) >= 0) return false;
   const introduced = parseVersion(nginxAdvisory.introduced);
+  if (introduced && cmpVersion(concrete, introduced) < 0) return false;
+  return major === 0 || major === 1;
+}
+
+/**
+ * True below nginx 1.31.9, or below 1.30.7 on the 1.30 line, inside the 18 November 2026 range.
+ * A floating 1.31 or 1.30 tag is not padded to patch 0. Newer than 1.31.9 is left alone.
+ * This is not the 14 October check.
+ */
+export function nginxMissingNovemberSecurityRelease(version: string): boolean {
+  const parts = nginxVersionParts(version);
+  if (!parts) return false;
+  const { major, minor, patch } = parts;
+  if (patch === undefined) {
+    const floatingFixed = nginxNovemberAdvisory.fixedLines.some((item) => item.major === major && item.minor === minor);
+    if (floatingFixed) return false;
+  }
+  const concrete = [major, minor, patch ?? 0];
+  const line = nginxNovemberAdvisory.fixedLines.find((item) => item.major === major && item.minor === minor);
+  if (line) return (concrete[2] ?? 0) < line.patch;
+  const mainline = nginxNovemberAdvisory.fixedLines.find((item) => item.major === 1 && item.minor === 31);
+  if (mainline && cmpVersion(concrete, [mainline.major, mainline.minor, mainline.patch]) >= 0) return false;
+  const introduced = parseVersion(nginxNovemberAdvisory.introduced);
   if (introduced && cmpVersion(concrete, introduced) < 0) return false;
   return major === 0 || major === 1;
 }

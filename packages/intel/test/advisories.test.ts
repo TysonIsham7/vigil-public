@@ -10,6 +10,7 @@ import {
   evaluatePhp,
   goMissingNovemberSecurityRelease,
   goMissingTrustFix,
+  nginxMissingNovemberSecurityRelease,
   isCompromisedAxios,
   isCompromisedLitellm,
   isVulnerableMcpSdk,
@@ -22,6 +23,8 @@ import {
   classifyPhpHeaders,
   phpAdvisory,
   phpSessionAdvisory,
+  phpMissingNovemberSecurityRelease,
+  phpNovemberReleaseStatus,
   phpSessionProgressNote,
   phpSessionUnfixedLine,
   phpVulnerable,
@@ -88,15 +91,33 @@ describe("advisories", () => {
     })).toMatchObject({ status: "vulnerable", version: "8.2.34", severity: "high" });
   });
 
-  it("keeps CVE-2026-115560 informational until PHP publishes a fixed release", () => {
-    expect(phpSessionAdvisory.fixed).toEqual([]);
+  it("compares CVE-2026-115560 with the 19 November 2026 releases", () => {
+    expect(phpSessionAdvisory.fixed).toEqual([
+      { major: 8, minor: 2, patch: 36 },
+      { major: 8, minor: 3, patch: 37 },
+      { major: 8, minor: 4, patch: 28 },
+      { major: 8, minor: 5, patch: 13 },
+    ]);
     expect(phpSessionAdvisory.cves).toEqual(["CVE-2026-115560"]);
+    expect(phpMissingNovemberSecurityRelease("8.5.12")).toBe(true);
+    expect(phpMissingNovemberSecurityRelease("8.5.13")).toBe(false);
+    expect(phpMissingNovemberSecurityRelease("8.2.35")).toBe(true);
+    expect(phpMissingNovemberSecurityRelease("8.2.36")).toBe(false);
+    expect(phpMissingNovemberSecurityRelease("8.6.0")).toBe(false);
+    expect(phpMissingNovemberSecurityRelease("8.1.33")).toBe(false);
+    expect(phpNovemberReleaseStatus("8.5.12")).toBe("vulnerable");
+    expect(phpNovemberReleaseStatus("8.5.13")).toBe("fixed");
+    expect(phpNovemberReleaseStatus("8.6.0")).toBe("fixed");
+    expect(phpNovemberReleaseStatus("7.4.33")).toBe("unknown");
     const note = phpSessionProgressNote("8.5.12");
     expect(note.id).toBe("PHP_CVE_2026_115560");
     expect(note.summary).toMatch(/8\.5\.12/);
+    expect(note.summary).toMatch(/8\.5\.13/);
+    expect(note.summary).not.toMatch(/has not published a fixed version/);
     expect(note.remediation[0]).toMatch(/session\.upload_progress\.enabled=0/);
     expect(note.remediation[0]).toMatch(/does not block a deploy or hold a page/);
     expect(phpSessionUnfixedLine()).toMatch(/CVE-2026-115560/);
+    expect(phpSessionUnfixedLine()).toMatch(/8\.2\.36/);
     expect(phpSessionUnfixedLine()).not.toMatch(/does not block a deploy or hold a page/);
   });
 
@@ -168,6 +189,15 @@ describe("advisories", () => {
     expect(nginxMissingSecurityRelease("1.31.6")).toBe(true);
     expect(nginxMissingSecurityRelease("nginx/1.31.7")).toBe(false);
     expect(nginxMissingSecurityRelease("1.31.8")).toBe(false);
+    expect(nginxMissingNovemberSecurityRelease("1.31.8")).toBe(true);
+    expect(nginxMissingNovemberSecurityRelease("1.31.9")).toBe(false);
+    expect(nginxMissingNovemberSecurityRelease("1.30.6")).toBe(true);
+    expect(nginxMissingNovemberSecurityRelease("1.30.7")).toBe(false);
+    expect(nginxMissingNovemberSecurityRelease("1.31")).toBe(false);
+    expect(nginxMissingNovemberSecurityRelease("1.30")).toBe(false);
+    expect(nginxMissingNovemberSecurityRelease("1.32.0")).toBe(false);
+    expect(nginxMissingNovemberSecurityRelease("0.5.32")).toBe(false);
+    expect(nginxMissingNovemberSecurityRelease("0.5.33")).toBe(true);
     expect(nginxMissingSecurityRelease("1.31.0")).toBe(true);
     expect(nginxMissingSecurityRelease("1.31")).toBe(false);
     expect(nginxMissingSecurityRelease("1.31-alpine3.24")).toBe(false);

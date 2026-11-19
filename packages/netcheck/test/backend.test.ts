@@ -232,11 +232,12 @@ describe("check-backend", () => {
     })]);
     expect(patched.findings.some((finding) => finding.id === "PHP_CVE_2026_109618")).toBe(false);
     const session = patched.findings.find((finding) => finding.id === "PHP_CVE_2026_115560");
-    expect(session?.severity).toBe("informational");
+    expect(session?.severity).toBe("high");
     expect(session?.recommendationOnly).toBe(true);
+    expect(session?.summary).toMatch(/8\.5\.13/);
     expect(session?.remediation.join(" ")).toMatch(/does not block a deploy or hold a page/);
     expect(patched.vulns[0]?.status).toBe("fixed");
-    expect(patched.vulns.find((row) => row.advisoryId === "PHP-CVE-2026-115560")?.status).toBe("suspected");
+    expect(patched.vulns.find((row) => row.advisoryId === "PHP-CVE-2026-115560")?.status).toBe("vulnerable");
     expect(patched.findings.some((finding) => finding.id === "BACKEND_HEADER_POWERED_BY")).toBe(true);
 
     const hidden = assess([response({

@@ -1,0 +1,27 @@
+{
+  "id": "NGINX-2026-11-18",
+  "cves": [
+    "CVE-2026-113425",
+    "CVE-2026-118899",
+    "CVE-2026-120967",
+    "CVE-2026-120993",
+    "CVE-2026-121810",
+    "CVE-2026-123007",
+    "CVE-2026-123633",
+    "CVE-2026-123634",
+    "CVE-2026-123640",
+    "CVE-2026-125283"
+  ],
+  "published": "2026-11-18",
+  "component": "nginx",
+  "summary": "nginx 1.31.9 and 1.30.7 fix ten issues published on the nginx.org security page after the 18 November scan. The page's anchor text for the HTTP/3 use-after-free writes the CVE prefix twice; the identifier is CVE-2026-121810. CVE-2026-120993 is mainline only, 1.31.4 through 1.31.8, fixed in 1.31.9. The other nine name 1.31.9 and 1.30.7. CVE-2026-123634 is NVD Received with no CPE. The floors are the nginx.org page.",
+  "introduced": "0.5.33",
+  "fixedLines": [
+    { "major": 1, "minor": 31, "patch": 9 },
+    { "major": 1, "minor": 30, "patch": 7 }
+  ],
+  "remediation": "Upgrade nginx to 1.31.9 or newer on the mainline, or to 1.30.7 or newer on the 1.30 line.",
+  "sources": [
+    "https://nginx.org/en/security_advisories.html"
+  ]
+}

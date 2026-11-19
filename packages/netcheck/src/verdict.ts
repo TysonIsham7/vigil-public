@@ -1,5 +1,5 @@
 import { NAV_BUDGET_MS, UrlRejected, headerFindings, inspectUrl, tlsRecommendation, type GateSignal } from "@vigil/core";
-import { INTEL_VERSION, assessSite, classifyPhpExposure, evaluatePhp, phpAdvisory, phpSessionProgressNote, wordpressCoreAdvisory, wordpressCoreFixedRelease, wordpressSignals } from "@vigil/intel";
+import { INTEL_VERSION, assessSite, classifyPhpExposure, evaluatePhp, phpAdvisory, phpMissingNovemberSecurityRelease, phpSessionProgressNote, wordpressCoreAdvisory, wordpressCoreFixedRelease, wordpressSignals } from "@vigil/intel";
 import { anchorSpkiHashes, readMozillaPem } from "./bundle.js";
 import {
   connectCertificateChain,
@@ -138,20 +138,20 @@ function assemble(
       recommendationOnly: php.recommendationOnly,
       title: php.status === "vulnerable" ? "Upgrade PHP" : "PHP detected without a version",
       summary: php.version
-        ? `Upgrade PHP. PHP ${php.version} is below the fixed release. session.upload_progress.enabled=0 is only a partial mitigation for one path of CVE-2026-109619. CVE-2026-115560 still has no patched release. ${phpAdvisory.knownExploited}`
-        : "The response looks like PHP, but no PHP/x.y.z version was disclosed. Upgrade PHP if this server runs it. CVE-2026-115560 still has no patched release.",
+        ? `Upgrade PHP. PHP ${php.version} is below the fixed release. session.upload_progress.enabled=0 is only a partial mitigation for one path of CVE-2026-109619. CVE-2026-115560 is fixed in the 19 November 2026 releases. ${phpAdvisory.knownExploited}`
+        : "The response looks like PHP, but no PHP/x.y.z version was disclosed. Upgrade PHP if this server runs it. CVE-2026-115560 is fixed in the 19 November 2026 releases.",
       confidence: php.version ? "high" : "medium",
     });
   }
-  if (php.status === "fixed") {
+  if (php.status === "fixed" && php.version && phpMissingNovemberSecurityRelease(php.version)) {
     const note = phpSessionProgressNote(php.version);
     signals.push({
       id: note.id,
-      severity: "informational",
+      severity: "high",
       recommendationOnly: true,
       title: note.title,
       summary: note.summary,
-      confidence: "medium",
+      confidence: "high",
     });
   }
   if (wp.present) {

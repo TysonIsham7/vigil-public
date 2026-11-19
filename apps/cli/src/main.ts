@@ -105,7 +105,9 @@ It sends no request body, no crash payload, no oversized header, and no exploit.
 Active probing of a host you do not own may breach that host's terms of service
 or computer-misuse law. Run it only on hosts you are allowed to test.
 PHP versions are read from headers and compared with 8.5.12, 8.4.27, 8.3.36,
-and 8.2.35. PHP 5-7 is never patched. PHP with no version is unknown.
+and 8.2.35 for the 21 October CVEs. CVE-2026-115560 is compared with 8.5.13,
+8.4.28, 8.3.37, and 8.2.36. PHP 8.6 and newer are not compared with 8.6.0.
+PHP 5-7 is never patched. PHP with no version is unknown.
 A fingerprint does not set block_deploy. An existing critical certificate
 failure still can, including when the first GET fails the certificate check.
 Exit 0 when block_deploy is false. Exit 2 when it is set.
