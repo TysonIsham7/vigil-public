@@ -20,6 +20,8 @@ import {
   evaluatePhp,
   phpAdvisory,
   phpSessionAdvisory,
+  phpMissingNovemberSecurityRelease,
+  phpNovemberReleaseStatus,
   phpSessionProgressNote,
   phpSessionUnfixedLine,
   registrableDomain,
@@ -184,8 +186,8 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
       severity: php.severity === "informational" ? "high" : php.severity,
       title: php.status === "vulnerable" ? "Upgrade PHP" : "PHP detected without a version",
       summary: php.version
-        ? `Upgrade PHP. PHP ${php.version} is below the fixed release for CVE-2026-109618 and CVE-2026-109619. CVE-2026-115560 still has no patched release.`
-        : "The response looks like PHP, but no PHP/x.y.z version was disclosed. Upgrade PHP if this server runs it. CVE-2026-115560 still has no patched release.",
+        ? `Upgrade PHP. PHP ${php.version} is below the fixed release for CVE-2026-109618 and CVE-2026-109619. CVE-2026-115560 is fixed in the 19 November 2026 releases.`
+        : "The response looks like PHP, but no PHP/x.y.z version was disclosed. Upgrade PHP if this server runs it. CVE-2026-115560 is fixed in the 19 November 2026 releases.",
       why: `${options.audience === "owner"
         ? "A confirmed vulnerable version on the owner's scan is a critical deploy block. A missing version stays a recommendation."
         : "A visitor scan warns instead of blocking, because the visitor does not control the server."}${php.version ? ` ${phpAdvisory.knownExploited}` : ""}`,
@@ -198,19 +200,19 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
       evidence: php.version ?? "version not disclosed",
     }));
   }
-  if (php.status === "fixed") {
+  if (php.status === "fixed" && php.version && phpMissingNovemberSecurityRelease(php.version)) {
     const note = phpSessionProgressNote(php.version);
     extra.push(netFinding({
       id: note.id,
-      severity: "informational",
+      severity: "high",
       title: note.title,
       summary: note.summary,
-      why: "The 21 October 2026 PHP releases fix CVE-2026-109618 and CVE-2026-109619. PHP's 23 October note says they do not fix CVE-2026-115560, and no patched release exists yet.",
+      why: "The 21 October 2026 PHP releases fix CVE-2026-109618 and CVE-2026-109619. They do not fix CVE-2026-115560. The 19 November 2026 releases do. This comparison does not block a deploy or hold a page.",
       remediation: note.remediation,
       recommendationOnly: true,
       category: "vulnerability",
-      confidence: "medium",
-      evidence: php.version ?? "version not disclosed",
+      confidence: "high",
+      evidence: php.version,
     }));
   }
   const wordpressFloor = wp.version ? wordpressCoreFixedRelease(wp.version) : null;
@@ -315,9 +317,9 @@ export async function scanUrl(input: string, options: ScanUrlOptions): Promise<S
             cves: [...phpSessionAdvisory.cves],
             component: "php",
             ...(php.version ? { detectedVersion: php.version } : {}),
-            status: "suspected" as const,
+            status: phpNovemberReleaseStatus(php.version),
             audience: options.audience,
-            level: "info" as const,
+            level: phpNovemberReleaseStatus(php.version) === "vulnerable" ? "warn" as const : "info" as const,
             mitigation: php.status === "fixed" ? phpSessionAdvisory.mitigation : phpSessionUnfixedLine(),
           }]),
       ...(wp.present

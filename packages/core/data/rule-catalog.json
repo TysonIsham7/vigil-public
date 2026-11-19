@@ -1,5 +1,5 @@
 {
-  "version": "2026.11.11.1",
+  "version": "2026.11.19.1",
   "frameworks": {
     "nistCsf": "2.0",
     "cis": "8.1"
@@ -117,6 +117,7 @@
     "TOOLCHAIN_GO": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
     "TOOLCHAIN_GO_2026_11_10": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
     "TOOLCHAIN_NGINX": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
+    "TOOLCHAIN_NGINX_2026_11_18": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
     "TOOLCHAIN_PIP": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
     "TOOLCHAIN_UV": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },
     "TOOLCHAIN_PYTHON": { "domain": "endpoint-device", "nist": "ID.RA", "cis": { "control": 2, "safeguard": "2.2", "safeguardTitle": "Ensure Authorized Software is Currently Supported" } },

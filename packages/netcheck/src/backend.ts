@@ -19,7 +19,7 @@ import {
   type ScanLimits,
   type VulnCheck,
 } from "@vigil/core";
-import { INTEL_VERSION, classifyPhpHeaders, phpAdvisory, phpSessionAdvisory, phpSessionProgressNote, phpSessionUnfixedLine, type PhpHeaderExposure } from "@vigil/intel";
+import { INTEL_VERSION, classifyPhpHeaders, phpAdvisory, phpMissingNovemberSecurityRelease, phpNovemberReleaseStatus, phpSessionAdvisory, phpSessionProgressNote, phpSessionUnfixedLine, type PhpHeaderExposure } from "@vigil/intel";
 import { anchorSpkiHashes, readMozillaPem } from "./bundle.js";
 import {
   evaluateCertificateChain,
@@ -466,7 +466,7 @@ function phpFinding(findings: Finding[], php: PhpHeaderExposure): void {
       severity: "high",
       confidence: "high",
       title: "Upgrade PHP",
-      summary: `Upgrade PHP. PHP ${php.version} is below the fixed release for CVE-2026-109618 and CVE-2026-109619. CVE-2026-115560 still has no patched release.`,
+      summary: `Upgrade PHP. PHP ${php.version} is below the fixed release for CVE-2026-109618 and CVE-2026-109619. CVE-2026-115560 is fixed in the 19 November 2026 releases.`,
       why: `The version was advertised in a response header. Vigil compared it with the patched PHP releases and did not probe the server. ${phpAdvisory.knownExploited}`,
       remediation: [phpAdvisory.upgrade, phpAdvisory.mitigation, phpSessionUnfixedLine(), phpAdvisory.kevAction],
       category: "vulnerability",
@@ -474,15 +474,15 @@ function phpFinding(findings: Finding[], php: PhpHeaderExposure): void {
     });
     return;
   }
-  if (php.status === "patched" && php.version) {
+  if (php.status === "patched" && php.version && phpMissingNovemberSecurityRelease(php.version)) {
     const note = phpSessionProgressNote(php.version);
     add(findings, {
       id: note.id,
-      severity: "informational",
-      confidence: "medium",
+      severity: "high",
+      confidence: "high",
       title: note.title,
       summary: note.summary,
-      why: "The 21 October 2026 PHP releases fix CVE-2026-109618 and CVE-2026-109619. PHP's 23 October note says they do not fix CVE-2026-115560, and no patched release exists yet.",
+      why: "The 21 October 2026 PHP releases fix CVE-2026-109618 and CVE-2026-109619. They do not fix CVE-2026-115560. The 19 November 2026 releases do. This comparison does not block a deploy or hold a page.",
       remediation: note.remediation,
       category: "vulnerability",
       evidence: php.version,
@@ -528,9 +528,9 @@ function phpSessionVuln(php: PhpHeaderExposure): VulnCheck | undefined {
     cves: [...phpSessionAdvisory.cves],
     component: "php",
     ...(php.version ? { detectedVersion: php.version } : {}),
-    status: "suspected",
+    status: phpNovemberReleaseStatus(php.version),
     audience: "visitor",
-    level: "info",
+    level: phpNovemberReleaseStatus(php.version) === "vulnerable" ? "warn" : "info",
     mitigation: php.status === "patched" ? phpSessionAdvisory.mitigation : phpSessionUnfixedLine(),
   };
 }

@@ -141,7 +141,7 @@ describe("host verdict", () => {
       },
     });
     const note = result.signals.find((signal) => signal.id === "PHP_CVE_2026_115560");
-    expect(note?.severity).toBe("informational");
+    expect(note?.severity).toBe("high");
     expect(note?.recommendationOnly).toBe(true);
     expect(note?.summary).toMatch(/8\.5\.12/);
     expect(result.signals.some((signal) => signal.id === "PHP_CVE_2026_109618")).toBe(false);

@@ -52,7 +52,8 @@ The PHP check reads `X-Powered-By` and `Server` and uses the same comparison as 
 
 | Advertised version | Result |
 |---|---|
-| `8.2.35`, `8.3.36`, `8.4.27`, `8.5.12`, or a newer line | Patched for CVE-2026-109618 and CVE-2026-109619. The header is still a disclosure. `PHP_CVE_2026_115560` is an informational note. It does not block a deploy. |
+| `8.2.36`, `8.3.37`, `8.4.28`, `8.5.13`, or PHP 8.6 and newer | Patched for CVE-2026-109618, CVE-2026-109619, and CVE-2026-115560. The header is still a disclosure. |
+| `8.2.35`, `8.3.36`, `8.4.27`, or `8.5.12` | Patched for CVE-2026-109618 and CVE-2026-109619. `PHP_CVE_2026_115560` compares the version with the 19 November 2026 release. It does not block a deploy. |
 | `8.2`, `8.3`, `8.4`, or `8.5` below those releases, or `8.0` / `8.1` | Below the fixed release. |
 | PHP 5, 6, or 7 | Never patched for CVE-2026-109618 and CVE-2026-109619. |
 | PHP is present and no `PHP/x.y.z` was advertised | Unknown. This is not a vulnerable result and not a patched result. |
