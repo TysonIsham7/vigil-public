@@ -13,6 +13,7 @@ import {
   isCompromisedAxios,
   isCompromisedLitellm,
   isVulnerableMcpSdk,
+  nginxMissingNovember23SecurityRelease,
   nginxMissingSecurityRelease,
   nodeAdvisory,
   nodeMissingSecurityRelease,
@@ -182,6 +183,22 @@ describe("advisories", () => {
     expect(nginxMissingSecurityRelease("1.32.0")).toBe(false);
     expect(nginxMissingSecurityRelease("0.1.28")).toBe(false);
     expect(nginxMissingSecurityRelease("0.1.29")).toBe(true);
+  });
+
+  it("flags nginx builds below the 23 November 2026 security release", () => {
+    expect(nginxMissingNovember23SecurityRelease("1.31.9")).toBe(true);
+    expect(nginxMissingNovember23SecurityRelease("nginx/1.31.10")).toBe(false);
+    expect(nginxMissingNovember23SecurityRelease("1.31.10-alpine")).toBe(false);
+    expect(nginxMissingNovember23SecurityRelease("1.30.7")).toBe(true);
+    expect(nginxMissingNovember23SecurityRelease("1.30.8")).toBe(false);
+    expect(nginxMissingNovember23SecurityRelease("1.31")).toBe(false);
+    expect(nginxMissingNovember23SecurityRelease("1.30-alpine")).toBe(false);
+    expect(nginxMissingNovember23SecurityRelease("1.29.4")).toBe(true);
+    expect(nginxMissingNovember23SecurityRelease("1.21.4")).toBe(true);
+    expect(nginxMissingNovember23SecurityRelease("1.21.3")).toBe(false);
+    expect(nginxMissingNovember23SecurityRelease("1.20.1")).toBe(false);
+    expect(nginxMissingNovember23SecurityRelease("1.32.0")).toBe(false);
+    expect(nginxMissingNovember23SecurityRelease("0.1.29")).toBe(false);
   });
 
   it("flags CPython below the 26 October 2026 floors without padding or swallowing a pre-release", () => {

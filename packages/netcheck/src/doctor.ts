@@ -1,4 +1,4 @@
-import { assessKernel, assessKernelSharedFrag, curlAdvisory, curlAffected, goAdvisory, goMissingNovemberSecurityRelease, goMissingTrustFix, goNovemberAdvisory, kernelAdvisory, kernelSharedFragAdvisory, litellmAdvisory, nginxAdvisory, nginxMissingSecurityRelease, nodeAdvisory, nodeMissingSecurityRelease, pipAdvisory, pipMissingCertifiFix, pythonAdvisory, pythonMissingSecurityRelease, pythonVersionEvidence, uvMissingCertifiFix } from "@vigil/intel";
+import { assessKernel, assessKernelSharedFrag, curlAdvisory, curlAffected, goAdvisory, goMissingNovemberSecurityRelease, goMissingTrustFix, goNovemberAdvisory, kernelAdvisory, kernelSharedFragAdvisory, litellmAdvisory, nginxAdvisory, nginxMissingNovember23SecurityRelease, nginxMissingSecurityRelease, nginxNovember23Advisory, nodeAdvisory, nodeMissingSecurityRelease, pipAdvisory, pipMissingCertifiFix, pythonAdvisory, pythonMissingSecurityRelease, pythonVersionEvidence, uvMissingCertifiFix } from "@vigil/intel";
 import type { Finding } from "@vigil/core";
 import { dockerImageName, parseDockerImages, type ImageRef } from "./deps.js";
 import { netFinding } from "./finding.js";
@@ -66,6 +66,20 @@ export function assessToolchain(input: {
       summary: `nginx ${nginx ?? nginxRaw} is inside the range fixed by 1.31.7 on the mainline and 1.30.6 on the 1.30 line.`,
       why: "Those releases fix five medium worker issues, including a buffer overflow, HTTP/3 request-body injection, and TLS session-ticket forgery. This is a report about the machine running vigil doctor. It does not probe a remote server and it does not block a deploy.",
       remediation: [nginxAdvisory.remediation],
+      recommendationOnly: true,
+      category: "toolchain",
+      file: "(local)",
+      evidence: nginx ?? nginxRaw,
+    }));
+  }
+  if (nginxRaw && nginxMissingNovember23SecurityRelease(nginxRaw)) {
+    findings.push(netFinding({
+      id: "TOOLCHAIN_NGINX_2026_11_23",
+      severity: "high",
+      title: "Local nginx is below the 23 November 2026 security release",
+      summary: `nginx ${nginx ?? nginxRaw} is inside the range fixed by 1.31.10 on the mainline and 1.30.8 on the 1.30 line.`,
+      why: "CVE-2026-132779 is excessive CPU use in a worker when ssl_early_data is enabled. nginx.org rates it medium. The vulnerable range there is 1.21.4 through 1.31.9, and 1.30.8+ is not vulnerable. NVD status is Awaiting Analysis, with no CPE and no fixed release. Vigil cannot see whether ssl_early_data is on. A distributor may have backported the fix without changing this version string. This is a report about the machine running vigil doctor. It does not probe a remote server and it does not block a deploy.",
+      remediation: [nginxNovember23Advisory.remediation],
       recommendationOnly: true,
       category: "toolchain",
       file: "(local)",
@@ -157,7 +171,9 @@ export function assessToolchain(input: {
     const tag = versionToken(image.tag) ?? image.tag;
     const curlImage = /curl/i.test(image.image) && tag && curlAffected(tag);
     const goImage = /golang|^go(?::|\/)/i.test(image.image) && tag && goMissingNovemberSecurityRelease(tag);
-    const nginxImage = isNginxImage(image.image) && nginxMissingSecurityRelease(image.tag);
+    const nginxOctoberImage = isNginxImage(image.image) && nginxMissingSecurityRelease(image.tag);
+    const nginxNovemberImage = isNginxImage(image.image) && nginxMissingNovember23SecurityRelease(image.tag);
+    const nginxImage = nginxOctoberImage || nginxNovemberImage;
     const pythonImage = dockerImageName(image.image) === "python" && image.tag !== "" && pythonMissingSecurityRelease(image.tag);
     if (curlImage || goImage || nginxImage) {
       const kind = curlImage ? "a curl" : goImage ? "a Go" : "an nginx";
@@ -167,7 +183,7 @@ export function assessToolchain(input: {
         title: "Container base image is missing a toolchain fix",
         summary: `${image.image} matches ${kind} advisory range.`,
         why: "Doctor reports the image. It does not build or run it.",
-        remediation: [curlImage ? curlAdvisory.remediation : goImage ? goNovemberAdvisory.remediation : nginxAdvisory.remediation],
+        remediation: [curlImage ? curlAdvisory.remediation : goImage ? goNovemberAdvisory.remediation : nginxNovemberImage ? nginxNovember23Advisory.remediation : nginxAdvisory.remediation],
         recommendationOnly: true,
         category: "toolchain",
         file: image.source,

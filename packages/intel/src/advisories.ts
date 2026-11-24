@@ -11,6 +11,7 @@ import litellmAdvisory from "../advisories/litellm-1.107.0.json" with { type: "j
 import lmdeployAdvisory from "../advisories/lmdeploy-cve-2026-119706.json" with { type: "json" };
 import mcpSdkAdvisory from "../advisories/mcp-sdk-1.32.0.json" with { type: "json" };
 import nginxAdvisory from "../advisories/nginx-2026-10-14.json" with { type: "json" };
+import nginxNovember23Advisory from "../advisories/nginx-2026-11-23.json" with { type: "json" };
 import nodeAdvisory from "../advisories/node-2026-10-21.json" with { type: "json" };
 import phpAdvisory from "../advisories/php-cve-2026-109618.json" with { type: "json" };
 import phpSessionAdvisory from "../advisories/php-cve-2026-115560.json" with { type: "json" };
@@ -32,6 +33,7 @@ export {
   lmdeployAdvisory,
   mcpSdkAdvisory,
   nginxAdvisory,
+  nginxNovember23Advisory,
   nodeAdvisory,
   phpAdvisory,
   phpSessionAdvisory,
@@ -351,6 +353,28 @@ export function nginxMissingSecurityRelease(version: string): boolean {
   const introduced = parseVersion(nginxAdvisory.introduced);
   if (introduced && cmpVersion(concrete, introduced) < 0) return false;
   return major === 0 || major === 1;
+}
+
+/**
+ * True inside the 23 November 2026 nginx range for CVE-2026-132779.
+ * 1.31.10+ and the 1.30.8+ stable line are the fixed releases.
+ * The vendor range starts at 1.21.4 and ends at 1.31.9.
+ * A tag that is only major.minor on 1.31 or 1.30 is not padded to patch 0.
+ * This is not the 14 October check.
+ */
+export function nginxMissingNovember23SecurityRelease(version: string): boolean {
+  const parts = nginxVersionParts(version);
+  if (!parts) return false;
+  const { major, minor, patch } = parts;
+  if (patch === undefined && major === 1 && (minor === 31 || minor === 30)) return false;
+  const concretePatch = patch ?? 0;
+  if (major > 1) return false;
+  if (major === 1 && minor > 31) return false;
+  if (major === 1 && minor === 31) return concretePatch < 10;
+  if (major === 1 && minor === 30) return concretePatch < 8;
+  if (major === 1 && minor > 21) return true;
+  if (major === 1 && minor === 21) return concretePatch >= 4;
+  return false;
 }
 
 function nginxVersionParts(input: string): { major: number; minor: number; patch?: number } | null {

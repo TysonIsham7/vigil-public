@@ -1,0 +1,18 @@
+{
+  "id": "NGINX-2026-11-23",
+  "cves": ["CVE-2026-132779"],
+  "published": "2026-11-23",
+  "component": "nginx",
+  "summary": "nginx 1.31.10 and 1.30.8, released 23 November 2026, fix excessive CPU use in a worker when ssl_early_data is enabled. The vulnerable range on the nginx.org advisory is 1.21.4 through 1.31.9, except 1.30.8 and later on the 1.30 line. The 14 October floors stay 1.31.7 and 1.30.6.",
+  "introduced": "1.21.4",
+  "fixedLines": [
+    { "major": 1, "minor": 31, "patch": 10 },
+    { "major": 1, "minor": 30, "patch": 8 }
+  ],
+  "remediation": "Upgrade nginx to 1.31.10 or newer on the mainline, or to 1.30.8 or newer on the 1.30 stable line.",
+  "sources": [
+    "https://nginx.org/en/security_advisories.html",
+    "https://nginx.org/en/CHANGES",
+    "https://nginx.org/en/CHANGES-1.30"
+  ]
+}
