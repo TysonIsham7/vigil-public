@@ -191,7 +191,13 @@ describe("doctor toolchain", () => {
     const nginxStable = assessToolchain({ nginxVersion: "nginx version: nginx/1.30.6" });
     expect(nginxOld.find((finding) => finding.id === "TOOLCHAIN_NGINX")?.recommendationOnly).toBe(true);
     expect(nginxOld.find((finding) => finding.id === "TOOLCHAIN_NGINX")?.evidence).toBe("1.31.6");
+    expect(nginxOld.find((finding) => finding.id === "TOOLCHAIN_NGINX_2026_11_23")?.recommendationOnly).toBe(true);
     expect(nginxStable.some((finding) => finding.id === "TOOLCHAIN_NGINX")).toBe(false);
+    expect(nginxStable.find((finding) => finding.id === "TOOLCHAIN_NGINX_2026_11_23")?.evidence).toBe("1.30.6");
+    expect(assessToolchain({ nginxVersion: "nginx version: nginx/1.31.9" }).find((finding) => finding.id === "TOOLCHAIN_NGINX_2026_11_23")).toMatchObject({ recommendationOnly: true, evidence: "1.31.9" });
+    expect(assessToolchain({ nginxVersion: "nginx version: nginx/1.31.10" }).some((finding) => finding.id === "TOOLCHAIN_NGINX_2026_11_23")).toBe(false);
+    expect(assessToolchain({ nginxVersion: "nginx version: nginx/1.30.8" }).some((finding) => finding.id === "TOOLCHAIN_NGINX_2026_11_23")).toBe(false);
+    expect(assessToolchain({ nginxVersion: "nginx version: nginx/1.21.3" }).some((finding) => finding.id === "TOOLCHAIN_NGINX_2026_11_23")).toBe(false);
   });
 
   it("reports nginx image tags without padding the floating 1.31 and 1.30 lines", () => {
@@ -206,6 +212,9 @@ describe("doctor toolchain", () => {
       "FROM localhost:5000/nginx:1.31.6",
       "FROM nginx:1.31.6@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "FROM nginx:1.31.7-alpine",
+      "FROM nginx:1.31.10-alpine",
+      "FROM nginx:1.30.8",
+      "FROM nginx:1.30.7",
       "FROM nginxinc/nginx-prometheus-exporter:1.0.0",
       "FROM nginxinc/nginx-unprivileged:1.30.5",
     ].join("\n"));
@@ -216,10 +225,13 @@ describe("doctor toolchain", () => {
       "localhost:5000/nginx:1.31.6",
       "nginx:1.28",
       "nginx:1.29",
+      "nginx:1.30.7",
       "nginx:1.31.6-alpine3.21",
       "nginx:1.31.6@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "nginx:1.31.7-alpine",
       "nginxinc/nginx-unprivileged:1.30.5",
     ]);
+    expect(flagged.find((finding) => finding.evidence === "nginx:1.31.7-alpine")?.remediation.join(" ")).toMatch(/1\.31\.10/);
     expect(flagged.every((finding) => finding.recommendationOnly)).toBe(true);
   });
 
